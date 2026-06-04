@@ -8,7 +8,6 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#050509" />
   <title>Diogo OS</title>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -17,7 +16,6 @@
     :root {
       --bg: #050509;
       --card: rgba(255, 255, 255, 0.075);
-      --card-strong: rgba(255, 255, 255, 0.105);
       --border: rgba(255, 255, 255, 0.13);
       --text: #f5f5f7;
       --muted: rgba(245, 245, 247, 0.62);
@@ -192,9 +190,7 @@
       transition: transform 0.15s ease, opacity 0.15s ease;
     }
 
-    button:active {
-      transform: scale(0.98);
-    }
+    button:active { transform: scale(0.98); }
 
     button.secondary {
       background: rgba(255, 255, 255, 0.08);
@@ -294,9 +290,7 @@
       border: 1px solid rgba(255, 255, 255, 0.09);
     }
 
-    .list-item strong {
-      float: right;
-    }
+    .list-item strong { float: right; }
 
     .form-grid {
       display: grid;
@@ -340,6 +334,25 @@
       color: #07070b;
     }
 
+    .history-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+    }
+
+    .history-day {
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+    }
+
+    .history-day strong {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
     .hidden { display: none; }
 
     .footer {
@@ -350,25 +363,12 @@
     }
 
     @media (max-width: 850px) {
-      .topbar {
-        flex-direction: column;
-      }
-
-      .wide, .small, .half, .full {
-        grid-column: span 12;
-      }
-
-      .stats, .quick-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .status-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
+      .topbar { flex-direction: column; }
+      .wide, .small, .half, .full { grid-column: span 12; }
+      .stats, .quick-grid { grid-template-columns: repeat(2, 1fr); }
+      .form-grid { grid-template-columns: 1fr; }
+      .status-grid { grid-template-columns: repeat(2, 1fr); }
+      .history-grid { grid-template-columns: 1fr; }
 
       .app {
         width: min(100% - 22px, 1180px);
@@ -380,18 +380,9 @@
         padding: 16px;
       }
 
-      .actions {
-        width: 100%;
-      }
-
-      .actions button, .pill {
-        flex: 1;
-        text-align: center;
-      }
-
-      .hero-title {
-        font-size: 30px;
-      }
+      .actions { width: 100%; }
+      .actions button, .pill { flex: 1; text-align: center; }
+      .hero-title { font-size: 30px; }
     }
   </style>
 </head>
@@ -508,12 +499,41 @@
           <div id="notesList" style="margin-top: 14px;"></div>
         </div>
 
+        <div class="card full">
+          <h2>Weekly Sales Command</h2>
+          <div class="stats">
+            <div class="stat">
+              <strong id="weeklyDials">0</strong>
+              <span class="muted">Weekly dials</span>
+            </div>
+            <div class="stat">
+              <strong id="weeklyContacts">0</strong>
+              <span class="muted">Weekly contacts</span>
+            </div>
+            <div class="stat">
+              <strong id="weeklyClosed">0</strong>
+              <span class="muted">Weekly sales</span>
+            </div>
+            <div class="stat">
+              <strong id="weeklyIncome">$0</strong>
+              <span class="muted">Weekly income</span>
+            </div>
+          </div>
+
+          <div class="progress"><span id="weeklyIncomeProgress"></span></div>
+          <p class="muted" id="weeklyIncomeText">$0 of $2,000 weekly target</p>
+
+          <div id="salesHistory" class="history-grid" style="margin-top: 14px;"></div>
+        </div>
+
         <div class="card half">
           <h2>Sales Tracker</h2>
           <div class="form-grid">
             <input id="salesDials" class="input" type="number" placeholder="Dials" />
             <input id="salesContacts" class="input" type="number" placeholder="Contacts" />
             <input id="salesAppointments" class="input" type="number" placeholder="Appointments" />
+            <input id="salesPresentations" class="input" type="number" placeholder="Presentations" />
+            <input id="salesApplications" class="input" type="number" placeholder="Applications" />
             <input id="salesClosed" class="input" type="number" placeholder="Closed sales" />
             <input id="salesIncome" class="input" type="number" placeholder="Income" />
           </div>
@@ -523,12 +543,11 @@
             <div class="list-item">Dials today <strong id="salesViewDials">0</strong></div>
             <div class="list-item">Contacts <strong id="salesViewContacts">0</strong></div>
             <div class="list-item">Appointments <strong id="salesViewAppointments">0</strong></div>
+            <div class="list-item">Presentations <strong id="salesViewPresentations">0</strong></div>
+            <div class="list-item">Applications <strong id="salesViewApplications">0</strong></div>
             <div class="list-item">Closed sales <strong id="salesViewClosed">0</strong></div>
             <div class="list-item">Income <strong id="salesViewIncome">$0</strong></div>
           </div>
-
-          <div class="progress"><span id="incomeProgress"></span></div>
-          <p class="muted" id="incomeProgressText">$0 of $2,000 weekly target</p>
         </div>
 
         <div class="card half">
@@ -577,17 +596,10 @@
           <button onclick="addCrm()">Add contact</button>
           <div id="crmList" style="margin-top: 14px;"></div>
         </div>
-
-        <div class="card full">
-          <h2>Home Screen Setup</h2>
-          <p class="muted">
-            On iPhone, open this site in Safari, tap Share, then Add to Home Screen. Name it Diogo OS.
-          </p>
-        </div>
       </div>
 
       <div class="footer">
-        Diogo OS v3, synced with Supabase.
+        Diogo OS v4, weekly sales history added.
       </div>
     </section>
   </main>
@@ -621,6 +633,15 @@
       return new Date().toISOString().slice(0, 10);
     }
 
+    function startOfWeekISO() {
+      const now = new Date();
+      const day = now.getDay();
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(now.setDate(diff));
+      monday.setHours(0, 0, 0, 0);
+      return monday.toISOString().slice(0, 10);
+    }
+
     async function checkSession() {
       const { data } = await client.auth.getSession();
 
@@ -650,7 +671,6 @@
       const password = document.getElementById("passwordInput").value.trim();
 
       authMessage.textContent = "Creating account...";
-
       const { error } = await client.auth.signUp({ email, password });
 
       if (error) {
@@ -666,7 +686,6 @@
       const password = document.getElementById("passwordInput").value.trim();
 
       authMessage.textContent = "Logging in...";
-
       const { data, error } = await client.auth.signInWithPassword({ email, password });
 
       if (error) {
@@ -696,7 +715,8 @@
         loadHealth(),
         loadMoneyGoals(),
         loadCrm(),
-        loadDailyStatus()
+        loadDailyStatus(),
+        loadWeeklySales()
       ]);
 
       syncStatus.textContent = "Synced";
@@ -726,7 +746,6 @@
 
       document.getElementById("focusInput").value = data.focus || "";
       document.getElementById("focusView").textContent = data.focus || "Win the day. Track the reps.";
-
       updateStatusUI();
     }
 
@@ -788,7 +807,6 @@
         .order("created_at", { ascending: false });
 
       if (error) return showError(error.message);
-
       renderTasks(data || []);
     }
 
@@ -897,6 +915,8 @@
         dials: Number(document.getElementById("salesDials").value || 0),
         contacts: Number(document.getElementById("salesContacts").value || 0),
         appointments: Number(document.getElementById("salesAppointments").value || 0),
+        presentations: Number(document.getElementById("salesPresentations").value || 0),
+        applications: Number(document.getElementById("salesApplications").value || 0),
         closed_sales: Number(document.getElementById("salesClosed").value || 0),
         income: Number(document.getElementById("salesIncome").value || 0)
       };
@@ -920,6 +940,7 @@
 
       if (error) return showError(error.message);
       await loadSales();
+      await loadWeeklySales();
     }
 
     async function quickDials(amount) {
@@ -939,16 +960,19 @@
       if (error) return showError(error.message);
 
       const sales = data || {};
-
       const dials = sales.dials || 0;
       const contacts = sales.contacts || 0;
       const appointments = sales.appointments || 0;
+      const presentations = sales.presentations || 0;
+      const applications = sales.applications || 0;
       const closed = sales.closed_sales || 0;
       const income = Number(sales.income || 0);
 
       document.getElementById("salesViewDials").textContent = dials;
       document.getElementById("salesViewContacts").textContent = contacts;
       document.getElementById("salesViewAppointments").textContent = appointments;
+      document.getElementById("salesViewPresentations").textContent = presentations;
+      document.getElementById("salesViewApplications").textContent = applications;
       document.getElementById("salesViewClosed").textContent = closed;
       document.getElementById("salesViewIncome").textContent = "$" + income.toLocaleString();
 
@@ -959,12 +983,56 @@
       document.getElementById("salesDials").value = dials || "";
       document.getElementById("salesContacts").value = contacts || "";
       document.getElementById("salesAppointments").value = appointments || "";
+      document.getElementById("salesPresentations").value = presentations || "";
+      document.getElementById("salesApplications").value = applications || "";
       document.getElementById("salesClosed").value = closed || "";
       document.getElementById("salesIncome").value = income || "";
+    }
 
-      const percent = Math.min(100, Math.round((income / 2000) * 100));
-      document.getElementById("incomeProgress").style.width = percent + "%";
-      document.getElementById("incomeProgressText").textContent = "$" + income.toLocaleString() + " of $2,000 weekly target";
+    async function loadWeeklySales() {
+      const { data, error } = await client
+        .from("sales_entries")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .gte("entry_date", startOfWeekISO())
+        .order("entry_date", { ascending: false });
+
+      if (error) return showError(error.message);
+
+      const rows = data || [];
+      const totals = rows.reduce((acc, row) => {
+        acc.dials += row.dials || 0;
+        acc.contacts += row.contacts || 0;
+        acc.closed += row.closed_sales || 0;
+        acc.income += Number(row.income || 0);
+        return acc;
+      }, { dials: 0, contacts: 0, closed: 0, income: 0 });
+
+      document.getElementById("weeklyDials").textContent = totals.dials;
+      document.getElementById("weeklyContacts").textContent = totals.contacts;
+      document.getElementById("weeklyClosed").textContent = totals.closed;
+      document.getElementById("weeklyIncome").textContent = "$" + totals.income.toLocaleString();
+
+      const percent = Math.min(100, Math.round((totals.income / 2000) * 100));
+      document.getElementById("weeklyIncomeProgress").style.width = percent + "%";
+      document.getElementById("weeklyIncomeText").textContent = "$" + totals.income.toLocaleString() + " of $2,000 weekly target";
+
+      const salesHistory = document.getElementById("salesHistory");
+
+      if (!rows.length) {
+        salesHistory.innerHTML = '<p class="muted">No sales history this week yet.</p>';
+        return;
+      }
+
+      salesHistory.innerHTML = rows.map(row => `
+        <div class="history-day">
+          <strong>${row.entry_date}</strong>
+          <p class="muted">Dials: ${row.dials || 0}</p>
+          <p class="muted">Contacts: ${row.contacts || 0}</p>
+          <p class="muted">Sales: ${row.closed_sales || 0}</p>
+          <p class="muted">Income: $${Number(row.income || 0).toLocaleString()}</p>
+        </div>
+      `).join("");
     }
 
     async function saveHealth() {
@@ -1022,7 +1090,6 @@
       if (error) return showError(error.message);
 
       const h = data || {};
-
       document.getElementById("healthViewWeight").textContent = h.weight ? h.weight + " lb" : "Not logged";
       document.getElementById("healthViewWater").textContent = (h.water_oz || 0) + " oz";
       document.getElementById("healthViewSteps").textContent = h.steps || 0;
@@ -1171,11 +1238,7 @@
           .channel(table + "-channel")
           .on(
             "postgres_changes",
-            {
-              event: "*",
-              schema: "public",
-              table
-            },
+            { event: "*", schema: "public", table },
             () => loadAll()
           )
           .subscribe();
