@@ -4,13 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Diogo OS</title>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -58,15 +55,907 @@
       margin-bottom: 24px;
     }
 
-    .brand {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
     .brand h1 {
       margin: 0;
-      font-size: clamp(32px, 6vw, 56px);
+      font-size: clamp(34px, 6vw, 58px);
+      letter-spacing: -0.06em;
+      line-height: 0.95;
+    }
+
+    .brand p {
+      margin: 6px 0 0;
+      color: rgba(245, 245, 247, 0.66);
+      font-size: 15px;
+    }
+
+    .pill {
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(245, 245, 247, 0.85);
+      padding: 10px 14px;
+      border-radius: 999px;
+      backdrop-filter: blur(22px);
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.075);
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(28px);
+      border-radius: 28px;
+      padding: 20px;
+    }
+
+    .wide { grid-column: span 8; }
+    .small { grid-column: span 4; }
+    .half { grid-column: span 6; }
+    .full { grid-column: span 12; }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 20px;
+      letter-spacing: -0.03em;
+    }
+
+    .muted {
+      color: rgba(245, 245, 247, 0.62);
+      font-size: 14px;
+    }
+
+    .auth-box {
+      max-width: 430px;
+      margin: 70px auto;
+    }
+
+    .input, textarea, button, select {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      border-radius: 18px;
+      padding: 14px 15px;
+      font-size: 15px;
+      font-family: inherit;
+    }
+
+    .input, textarea, select {
+      background: rgba(255, 255, 255, 0.095);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      margin-bottom: 10px;
+    }
+
+    textarea {
+      min-height: 86px;
+      resize: vertical;
+    }
+
+    .input::placeholder, textarea::placeholder {
+      color: rgba(245, 245, 247, 0.43);
+    }
+
+    button {
+      cursor: pointer;
+      background: #f5f5f7;
+      color: #07070b;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    button.secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #f5f5f7;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    button.danger {
+      background: rgba(255, 80, 80, 0.16);
+      color: #ffb3b3;
+      border: 1px solid rgba(255, 80, 80, 0.24);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .actions button {
+      width: auto;
+      padding: 11px 14px;
+      margin-top: 0;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .stat {
+      padding: 14px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 26px;
+      letter-spacing: -0.04em;
+      margin-bottom: 3px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .left input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+    }
+
+    .title.done {
+      color: rgba(245, 245, 247, 0.42);
+      text-decoration: line-through;
+    }
+
+    .mini-btn {
+      width: auto;
+      padding: 8px 10px;
+      border-radius: 12px;
+      margin: 0;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .section-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .list-item {
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+    }
+
+    .list-item strong {
+      float: right;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .hidden { display: none; }
+
+    .footer {
+      margin-top: 22px;
+      color: rgba(245, 245, 247, 0.42);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    @media (max-width: 850px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .wide, .small, .half, .full {
+        grid-column: span 12;
+      }
+
+      .stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .app {
+        width: min(100% - 24px, 1180px);
+        padding-top: 18px;
+      }
+
+      .card {
+        border-radius: 24px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="orb"></div>
+  <div class="orb two"></div>
+
+  <main class="app">
+    <section id="authView" class="auth-box card">
+      <div class="brand">
+        <h1>Diogo OS</h1>
+        <p>Your personal command center.</p>
+      </div>
+
+      <div style="height: 24px;"></div>
+
+      <input id="emailInput" class="input" type="email" placeholder="Email" />
+      <input id="passwordInput" class="input" type="password" placeholder="Password" />
+
+      <button onclick="signIn()">Log in</button>
+      <button class="secondary" onclick="signUp()">Create account</button>
+
+      <p id="authMessage" class="muted"></p>
+    </section>
+
+    <section id="dashboardView" class="hidden">
+      <div class="topbar">
+        <div class="brand">
+          <h1>Diogo OS</h1>
+          <p id="todayText">Loading today...</p>
+        </div>
+
+        <div class="actions">
+          <span id="userEmail" class="pill">Signed in</span>
+          <button class="secondary" onclick="loadAll()">Refresh</button>
+          <button class="danger" onclick="signOut()">Log out</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card wide">
+          <h2>Today Command Center</h2>
+          <p class="muted">Top priority for today</p>
+          <h2 style="font-size: 32px; margin-top: 8px;">Win the day. Track the reps.</h2>
+
+          <div class="stats">
+            <div class="stat">
+              <strong id="taskCount">0</strong>
+              <span class="muted">Tasks</span>
+            </div>
+            <div class="stat">
+              <strong id="dashDials">0</strong>
+              <span class="muted">Dials</span>
+            </div>
+            <div class="stat">
+              <strong id="dashContacts">0</strong>
+              <span class="muted">Contacts</span>
+            </div>
+            <div class="stat">
+              <strong id="dashIncome">$0</strong>
+              <span class="muted">Income</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card small">
+          <h2>Live Sync</h2>
+          <p class="muted">Connected to Supabase.</p>
+          <div class="list-item">
+            <span>Status</span>
+            <strong id="syncStatus">Ready</strong>
+          </div>
+          <div class="list-item" style="margin-top: 10px;">
+            <span>Device</span>
+            <strong id="deviceText">Web</strong>
+          </div>
+        </div>
+
+        <div class="card half">
+          <h2>Tasks</h2>
+          <div class="actions">
+            <input id="taskInput" class="input" style="margin: 0; flex: 1; min-width: 180px;" placeholder="Add a task..." />
+            <button style="width: auto;" onclick="addTask()">Add</button>
+          </div>
+          <div id="taskList" style="margin-top: 14px;"></div>
+        </div>
+
+        <div class="card half">
+          <h2>Notes</h2>
+          <input id="noteTitle" class="input" placeholder="Note title" />
+          <textarea id="noteContent" placeholder="Write a note..."></textarea>
+          <button onclick="addNote()">Save note</button>
+          <div id="notesList" style="margin-top: 14px;"></div>
+        </div>
+
+        <div class="card half">
+          <h2>Sales Tracker</h2>
+          <div class="form-grid">
+            <input id="salesDials" class="input" type="number" placeholder="Dials" />
+            <input id="salesContacts" class="input" type="number" placeholder="Contacts" />
+            <input id="salesAppointments" class="input" type="number" placeholder="Appointments" />
+            <input id="salesClosed" class="input" type="number" placeholder="Closed sales" />
+            <input id="salesIncome" class="input" type="number" placeholder="Income" />
+          </div>
+          <button onclick="saveSales()">Save today</button>
+
+          <div class="section-list" style="margin-top: 14px;">
+            <div class="list-item">Dials today <strong id="salesViewDials">0</strong></div>
+            <div class="list-item">Contacts <strong id="salesViewContacts">0</strong></div>
+            <div class="list-item">Appointments <strong id="salesViewAppointments">0</strong></div>
+            <div class="list-item">Closed sales <strong id="salesViewClosed">0</strong></div>
+            <div class="list-item">Income <strong id="salesViewIncome">$0</strong></div>
+          </div>
+        </div>
+
+        <div class="card half">
+          <h2>Health</h2>
+          <div class="form-grid">
+            <input id="healthWeight" class="input" type="number" placeholder="Weight" />
+            <input id="healthWater" class="input" type="number" placeholder="Water oz" />
+            <input id="healthSteps" class="input" type="number" placeholder="Steps" />
+            <input id="healthSleep" class="input" type="number" placeholder="Sleep hours" />
+          </div>
+          <input id="healthWorkout" class="input" placeholder="Workout, example Chest and Triceps" />
+          <button onclick="saveHealth()">Save health</button>
+
+          <div class="section-list" style="margin-top: 14px;">
+            <div class="list-item">Weight <strong id="healthViewWeight">Not logged</strong></div>
+            <div class="list-item">Water <strong id="healthViewWater">0 oz</strong></div>
+            <div class="list-item">Steps <strong id="healthViewSteps">0</strong></div>
+            <div class="list-item">Sleep <strong id="healthViewSleep">0h</strong></div>
+            <div class="list-item">Workout <strong id="healthViewWorkout">Not logged</strong></div>
+          </div>
+        </div>
+
+        <div class="card half">
+          <h2>Money Goals</h2>
+          <input id="moneyName" class="input" placeholder="Goal name, example BMW M3" />
+          <div class="form-grid">
+            <input id="moneyTarget" class="input" type="number" placeholder="Target amount" />
+            <input id="moneyCurrent" class="input" type="number" placeholder="Current amount" />
+          </div>
+          <button onclick="addMoneyGoal()">Add goal</button>
+          <div id="moneyList" style="margin-top: 14px;"></div>
+        </div>
+
+        <div class="card half">
+          <h2>CRM</h2>
+          <input id="crmName" class="input" placeholder="Name" />
+          <input id="crmCategory" class="input" placeholder="Category, example Prospect or Mentor" />
+          <div class="form-grid">
+            <input id="crmLast" class="input" type="date" />
+            <input id="crmNext" class="input" type="date" />
+          </div>
+          <textarea id="crmNotes" placeholder="Notes"></textarea>
+          <button onclick="addCrm()">Add contact</button>
+          <div id="crmList" style="margin-top: 14px;"></div>
+        </div>
+
+        <div class="card full">
+          <h2>Next Features</h2>
+          <p class="muted">
+            Next we clean the design, add quick buttons, add progress bars, add live presence, and make the iPhone Home Screen icon feel more like a real app.
+          </p>
+        </div>
+      </div>
+
+      <div class="footer">
+        Diogo OS v2, synced with Supabase.
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const SUPABASE_URL = "https://gztozbdnyphpofccvwvc.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6dG96YmRueXBocG9mY2N2d3ZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MjUyNzksImV4cCI6MjA5NjEwMTI3OX0.V1XbII8XqS7vuIYcoxf0aL0mAlluatj_xdNQTOHih_A";
+
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const authView = document.getElementById("authView");
+    const dashboardView = document.getElementById("dashboardView");
+    const authMessage = document.getElementById("authMessage");
+    const userEmail = document.getElementById("userEmail");
+    const syncStatus = document.getElementById("syncStatus");
+
+    let currentUser = null;
+
+    document.getElementById("todayText").textContent = new Date().toLocaleDateString(undefined, {
+      weekday: "long",
+      month: "long",
+      day: "numeric"
+    });
+
+    document.getElementById("deviceText").textContent = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? "iPhone" : "Mac or Web";
+
+    function todayISO() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    async function checkSession() {
+      const { data } = await client.auth.getSession();
+
+      if (data.session) {
+        currentUser = data.session.user;
+        showDashboard();
+      } else {
+        showAuth();
+      }
+    }
+
+    function showAuth() {
+      authView.classList.remove("hidden");
+      dashboardView.classList.add("hidden");
+    }
+
+    async function showDashboard() {
+      authView.classList.add("hidden");
+      dashboardView.classList.remove("hidden");
+      userEmail.textContent = currentUser.email;
+      await loadAll();
+      startRealtime();
+    }
+
+    async function signUp() {
+      const email = document.getElementById("emailInput").value.trim();
+      const password = document.getElementById("passwordInput").value.trim();
+
+      authMessage.textContent = "Creating account...";
+
+      const { error } = await client.auth.signUp({ email, password });
+
+      if (error) {
+        authMessage.textContent = error.message;
+        return;
+      }
+
+      authMessage.textContent = "Account created. Check your email if needed.";
+    }
+
+    async function signIn() {
+      const email = document.getElementById("emailInput").value.trim();
+      const password = document.getElementById("passwordInput").value.trim();
+
+      authMessage.textContent = "Logging in...";
+
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        authMessage.textContent = error.message;
+        return;
+      }
+
+      currentUser = data.user;
+      showDashboard();
+    }
+
+    async function signOut() {
+      await client.auth.signOut();
+      currentUser = null;
+      showAuth();
+    }
+
+    async function loadAll() {
+      if (!currentUser) return;
+      syncStatus.textContent = "Loading";
+
+      await Promise.all([
+        loadTasks(),
+        loadNotes(),
+        loadSales(),
+        loadHealth(),
+        loadMoneyGoals(),
+        loadCrm()
+      ]);
+
+      syncStatus.textContent = "Synced";
+    }
+
+    async function loadTasks() {
+      const { data, error } = await client
+        .from("tasks")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: false });
+
+      if (error) return showError(error.message);
+
+      renderTasks(data || []);
+    }
+
+    function renderTasks(tasks) {
+      document.getElementById("taskCount").textContent = tasks.length;
+
+      const taskList = document.getElementById("taskList");
+
+      if (!tasks.length) {
+        taskList.innerHTML = '<p class="muted">No tasks yet. Add your first one.</p>';
+        return;
+      }
+
+      taskList.innerHTML = tasks.map(task => `
+        <div class="row">
+          <div class="left">
+            <input type="checkbox" ${task.completed ? "checked" : ""} onchange="toggleTask('${task.id}', ${!task.completed})" />
+            <span class="title ${task.completed ? "done" : ""}">${escapeHtml(task.title)}</span>
+          </div>
+          <button class="mini-btn secondary" onclick="deleteTask('${task.id}')">Delete</button>
+        </div>
+      `).join("");
+    }
+
+    async function addTask() {
+      const input = document.getElementById("taskInput");
+      const title = input.value.trim();
+      if (!title) return;
+
+      const { error } = await client.from("tasks").insert({ title, user_id: currentUser.id });
+      if (error) return showError(error.message);
+
+      input.value = "";
+      await loadTasks();
+    }
+
+    async function toggleTask(id, completed) {
+      const { error } = await client
+        .from("tasks")
+        .update({ completed })
+        .eq("id", id)
+        .eq("user_id", currentUser.id);
+
+      if (error) return showError(error.message);
+      await loadTasks();
+    }
+
+    async function deleteTask(id) {
+      const { error } = await client
+        .from("tasks")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", currentUser.id);
+
+      if (error) return showError(error.message);
+      await loadTasks();
+    }
+
+    async function addNote() {
+      const title = document.getElementById("noteTitle").value.trim();
+      const content = document.getElementById("noteContent").value.trim();
+
+      if (!title) return;
+
+      const { error } = await client.from("notes").insert({
+        user_id: currentUser.id,
+        title,
+        content
+      });
+
+      if (error) return showError(error.message);
+
+      document.getElementById("noteTitle").value = "";
+      document.getElementById("noteContent").value = "";
+      await loadNotes();
+    }
+
+    async function loadNotes() {
+      const { data, error } = await client
+        .from("notes")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: false });
+
+      if (error) return showError(error.message);
+
+      const notesList = document.getElementById("notesList");
+
+      if (!data.length) {
+        notesList.innerHTML = '<p class="muted">No notes yet.</p>';
+        return;
+      }
+
+      notesList.innerHTML = data.map(note => `
+        <div class="list-item">
+          <strong style="float:none;">${escapeHtml(note.title)}</strong>
+          <p class="muted">${escapeHtml(note.content || "")}</p>
+          <button class="mini-btn secondary" onclick="deleteRow('notes', '${note.id}', loadNotes)">Delete</button>
+        </div>
+      `).join("");
+    }
+
+    async function saveSales() {
+      const payload = {
+        user_id: currentUser.id,
+        entry_date: todayISO(),
+        dials: Number(document.getElementById("salesDials").value || 0),
+        contacts: Number(document.getElementById("salesContacts").value || 0),
+        appointments: Number(document.getElementById("salesAppointments").value || 0),
+        closed_sales: Number(document.getElementById("salesClosed").value || 0),
+        income: Number(document.getElementById("salesIncome").value || 0)
+      };
+
+      const { data: existing } = await client
+        .from("sales_entries")
+        .select("id")
+        .eq("user_id", currentUser.id)
+        .eq("entry_date", todayISO())
+        .maybeSingle();
+
+      let error;
+
+      if (existing) {
+        const result = await client.from("sales_entries").update(payload).eq("id", existing.id);
+        error = result.error;
+      } else {
+        const result = await client.from("sales_entries").insert(payload);
+        error = result.error;
+      }
+
+      if (error) return showError(error.message);
+      await loadSales();
+    }
+
+    async function loadSales() {
+      const { data, error } = await client
+        .from("sales_entries")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .eq("entry_date", todayISO())
+        .maybeSingle();
+
+      if (error) return showError(error.message);
+
+      const sales = data || {};
+
+      const dials = sales.dials || 0;
+      const contacts = sales.contacts || 0;
+      const appointments = sales.appointments || 0;
+      const closed = sales.closed_sales || 0;
+      const income = Number(sales.income || 0);
+
+      document.getElementById("salesViewDials").textContent = dials;
+      document.getElementById("salesViewContacts").textContent = contacts;
+      document.getElementById("salesViewAppointments").textContent = appointments;
+      document.getElementById("salesViewClosed").textContent = closed;
+      document.getElementById("salesViewIncome").textContent = "$" + income.toLocaleString();
+
+      document.getElementById("dashDials").textContent = dials;
+      document.getElementById("dashContacts").textContent = contacts;
+      document.getElementById("dashIncome").textContent = "$" + income.toLocaleString();
+
+      document.getElementById("salesDials").value = dials || "";
+      document.getElementById("salesContacts").value = contacts || "";
+      document.getElementById("salesAppointments").value = appointments || "";
+      document.getElementById("salesClosed").value = closed || "";
+      document.getElementById("salesIncome").value = income || "";
+    }
+
+    async function saveHealth() {
+      const payload = {
+        user_id: currentUser.id,
+        entry_date: todayISO(),
+        weight: Number(document.getElementById("healthWeight").value || 0),
+        water_oz: Number(document.getElementById("healthWater").value || 0),
+        steps: Number(document.getElementById("healthSteps").value || 0),
+        sleep_hours: Number(document.getElementById("healthSleep").value || 0),
+        workout: document.getElementById("healthWorkout").value.trim()
+      };
+
+      const { data: existing } = await client
+        .from("health_entries")
+        .select("id")
+        .eq("user_id", currentUser.id)
+        .eq("entry_date", todayISO())
+        .maybeSingle();
+
+      let error;
+
+      if (existing) {
+        const result = await client.from("health_entries").update(payload).eq("id", existing.id);
+        error = result.error;
+      } else {
+        const result = await client.from("health_entries").insert(payload);
+        error = result.error;
+      }
+
+      if (error) return showError(error.message);
+      await loadHealth();
+    }
+
+    async function loadHealth() {
+      const { data, error } = await client
+        .from("health_entries")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .eq("entry_date", todayISO())
+        .maybeSingle();
+
+      if (error) return showError(error.message);
+
+      const h = data || {};
+
+      document.getElementById("healthViewWeight").textContent = h.weight ? h.weight + " lb" : "Not logged";
+      document.getElementById("healthViewWater").textContent = (h.water_oz || 0) + " oz";
+      document.getElementById("healthViewSteps").textContent = h.steps || 0;
+      document.getElementById("healthViewSleep").textContent = (h.sleep_hours || 0) + "h";
+      document.getElementById("healthViewWorkout").textContent = h.workout || "Not logged";
+
+      document.getElementById("healthWeight").value = h.weight || "";
+      document.getElementById("healthWater").value = h.water_oz || "";
+      document.getElementById("healthSteps").value = h.steps || "";
+      document.getElementById("healthSleep").value = h.sleep_hours || "";
+      document.getElementById("healthWorkout").value = h.workout || "";
+    }
+
+    async function addMoneyGoal() {
+      const goal_name = document.getElementById("moneyName").value.trim();
+      const target_amount = Number(document.getElementById("moneyTarget").value || 0);
+      const current_amount = Number(document.getElementById("moneyCurrent").value || 0);
+
+      if (!goal_name) return;
+
+      const { error } = await client.from("money_goals").insert({
+        user_id: currentUser.id,
+        goal_name,
+        target_amount,
+        current_amount
+      });
+
+      if (error) return showError(error.message);
+
+      document.getElementById("moneyName").value = "";
+      document.getElementById("moneyTarget").value = "";
+      document.getElementById("moneyCurrent").value = "";
+      await loadMoneyGoals();
+    }
+
+    async function loadMoneyGoals() {
+      const { data, error } = await client
+        .from("money_goals")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: false });
+
+      if (error) return showError(error.message);
+
+      const moneyList = document.getElementById("moneyList");
+
+      if (!data.length) {
+        moneyList.innerHTML = '<p class="muted">No money goals yet.</p>';
+        return;
+      }
+
+      moneyList.innerHTML = data.map(goal => {
+        const target = Number(goal.target_amount || 0);
+        const current = Number(goal.current_amount || 0);
+        const percent = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+
+        return `
+          <div class="list-item">
+            <span>${escapeHtml(goal.goal_name)}</span>
+            <strong>$${current.toLocaleString()} / $${target.toLocaleString()}</strong>
+            <div style="clear:both; height:8px;"></div>
+            <div style="height:8px; border-radius:999px; background:rgba(255,255,255,0.1); overflow:hidden;">
+              <div style="height:100%; width:${percent}%; background:#f5f5f7;"></div>
+            </div>
+            <p class="muted">${percent}% complete</p>
+            <button class="mini-btn secondary" onclick="deleteRow('money_goals', '${goal.id}', loadMoneyGoals)">Delete</button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function addCrm() {
+      const name = document.getElementById("crmName").value.trim();
+      const category = document.getElementById("crmCategory").value.trim();
+      const last_contact = document.getElementById("crmLast").value || null;
+      const next_follow_up = document.getElementById("crmNext").value || null;
+      const notes = document.getElementById("crmNotes").value.trim();
+
+      if (!name) return;
+
+      const { error } = await client.from("crm_contacts").insert({
+        user_id: currentUser.id,
+        name,
+        category,
+        last_contact,
+        next_follow_up,
+        notes
+      });
+
+      if (error) return showError(error.message);
+
+      document.getElementById("crmName").value = "";
+      document.getElementById("crmCategory").value = "";
+      document.getElementById("crmLast").value = "";
+      document.getElementById("crmNext").value = "";
+      document.getElementById("crmNotes").value = "";
+      await loadCrm();
+    }
+
+    async function loadCrm() {
+      const { data, error } = await client
+        .from("crm_contacts")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: false });
+
+      if (error) return showError(error.message);
+
+      const crmList = document.getElementById("crmList");
+
+      if (!data.length) {
+        crmList.innerHTML = '<p class="muted">No contacts yet.</p>';
+        return;
+      }
+
+      crmList.innerHTML = data.map(contact => `
+        <div class="list-item">
+          <strong style="float:none;">${escapeHtml(contact.name)}</strong>
+          <p class="muted">${escapeHtml(contact.category || "No category")}</p>
+          <p class="muted">Last: ${contact.last_contact || "None"} | Next: ${contact.next_follow_up || "None"}</p>
+          <p class="muted">${escapeHtml(contact.notes || "")}</p>
+          <button class="mini-btn secondary" onclick="deleteRow('crm_contacts', '${contact.id}', loadCrm)">Delete</button>
+        </div>
+      `).join("");
+    }
+
+    async function deleteRow(table, id, callback) {
+      const { error } = await client
+        .from(table)
+        .delete()
+        .eq("id", id)
+        .eq("user_id", currentUser.id);
+
+      if (error) return showError(error.message);
+      await callback();
+    }
+
+    function startRealtime() {
+      const tables = ["tasks", "notes", "sales_entries", "health_entries", "money_goals", "crm_contacts"];
+
+      tables.forEach(table => {
+        client
+          .channel(table + "-channel")
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table
+            },
+            () => loadAll()
+          )
+          .subscribe();
+      });
+    }
+
+    function showError(message) {
+      syncStatus.textContent = message;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text || "";
+      return div.innerHTML;
+    }
+
+    checkSession();
+  </script>
+</body>
+</html>      font-size: clamp(32px, 6vw, 56px);
       letter-spacing: -0.06em;
       line-height: 0.95;
     }
