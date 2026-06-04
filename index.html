@@ -2,40 +2,58 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Diogo OS" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#050509" />
   <title>Diogo OS</title>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     * { box-sizing: border-box; }
+
+    :root {
+      --bg: #050509;
+      --card: rgba(255, 255, 255, 0.075);
+      --card-strong: rgba(255, 255, 255, 0.105);
+      --border: rgba(255, 255, 255, 0.13);
+      --text: #f5f5f7;
+      --muted: rgba(245, 245, 247, 0.62);
+      --soft: rgba(255, 255, 255, 0.08);
+      --danger: rgba(255, 80, 80, 0.16);
+    }
 
     body {
       margin: 0;
       min-height: 100vh;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
       background:
-        radial-gradient(circle at top left, rgba(92, 122, 255, 0.25), transparent 32%),
-        radial-gradient(circle at top right, rgba(0, 255, 204, 0.14), transparent 30%),
+        radial-gradient(circle at top left, rgba(82, 111, 255, 0.28), transparent 34%),
+        radial-gradient(circle at top right, rgba(0, 255, 204, 0.16), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(0, 255, 204, 0.13), transparent 28%),
         linear-gradient(135deg, #050509, #0b0d14 55%, #050509);
-      color: #f5f5f7;
+      color: var(--text);
       overflow-x: hidden;
     }
 
     .orb {
       position: fixed;
-      width: 380px;
-      height: 380px;
+      width: 420px;
+      height: 420px;
       border-radius: 50%;
-      background: rgba(80, 140, 255, 0.22);
-      filter: blur(70px);
+      background: rgba(80, 140, 255, 0.2);
+      filter: blur(78px);
       top: -120px;
       left: -120px;
       z-index: 0;
+      pointer-events: none;
     }
 
     .orb.two {
-      background: rgba(0, 255, 204, 0.12);
-      top: 60%;
+      background: rgba(0, 255, 204, 0.13);
+      top: 62%;
       left: 70%;
     }
 
@@ -44,38 +62,56 @@
       z-index: 1;
       width: min(1180px, 92%);
       margin: 0 auto;
-      padding: 26px 0 60px;
+      padding: 26px 0 70px;
     }
 
     .topbar {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 16px;
-      margin-bottom: 24px;
+      margin-bottom: 18px;
     }
 
     .brand h1 {
       margin: 0;
-      font-size: clamp(34px, 6vw, 58px);
-      letter-spacing: -0.06em;
-      line-height: 0.95;
+      font-size: clamp(38px, 7vw, 64px);
+      letter-spacing: -0.07em;
+      line-height: 0.9;
     }
 
     .brand p {
-      margin: 6px 0 0;
-      color: rgba(245, 245, 247, 0.66);
+      margin: 8px 0 0;
+      color: var(--muted);
       font-size: 15px;
     }
 
-    .pill {
-      border: 1px solid rgba(255, 255, 255, 0.13);
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .pill, .mini-pill {
+      border: 1px solid var(--border);
       background: rgba(255, 255, 255, 0.08);
-      color: rgba(245, 245, 247, 0.85);
-      padding: 10px 14px;
+      color: rgba(245, 245, 247, 0.86);
       border-radius: 999px;
       backdrop-filter: blur(22px);
+    }
+
+    .pill {
+      padding: 10px 14px;
       font-size: 14px;
+    }
+
+    .mini-pill {
+      padding: 7px 10px;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .grid {
@@ -85,8 +121,8 @@
     }
 
     .card {
-      background: rgba(255, 255, 255, 0.075);
-      border: 1px solid rgba(255, 255, 255, 0.13);
+      background: var(--card);
+      border: 1px solid var(--border);
       box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
       backdrop-filter: blur(28px);
       border-radius: 28px;
@@ -104,8 +140,15 @@
       letter-spacing: -0.03em;
     }
 
+    .hero-title {
+      font-size: clamp(28px, 4vw, 40px);
+      letter-spacing: -0.06em;
+      margin: 8px 0 16px;
+      line-height: 1;
+    }
+
     .muted {
-      color: rgba(245, 245, 247, 0.62);
+      color: var(--muted);
       font-size: 14px;
     }
 
@@ -127,7 +170,7 @@
     .input, textarea, select {
       background: rgba(255, 255, 255, 0.095);
       color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.13);
+      border: 1px solid var(--border);
       margin-bottom: 10px;
     }
 
@@ -144,8 +187,13 @@
       cursor: pointer;
       background: #f5f5f7;
       color: #07070b;
-      font-weight: 700;
+      font-weight: 800;
       margin-top: 8px;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:active {
+      transform: scale(0.98);
     }
 
     button.secondary {
@@ -155,16 +203,9 @@
     }
 
     button.danger {
-      background: rgba(255, 80, 80, 0.16);
+      background: var(--danger);
       color: #ffb3b3;
       border: 1px solid rgba(255, 80, 80, 0.24);
-    }
-
-    .actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
     }
 
     .actions button {
@@ -188,9 +229,22 @@
 
     .stat strong {
       display: block;
-      font-size: 26px;
-      letter-spacing: -0.04em;
+      font-size: 28px;
+      letter-spacing: -0.05em;
       margin-bottom: 3px;
+    }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .quick-grid button {
+      margin: 0;
+      padding: 13px 12px;
+      border-radius: 18px;
     }
 
     .row {
@@ -250,6 +304,42 @@
       gap: 10px;
     }
 
+    .progress {
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      margin-top: 9px;
+    }
+
+    .progress span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #f5f5f7, rgba(0, 255, 204, 0.75));
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .status-btn {
+      margin: 0;
+      padding: 12px 10px;
+      border-radius: 18px;
+      background: var(--soft);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .status-btn.active {
+      background: #f5f5f7;
+      color: #07070b;
+    }
+
     .hidden { display: none; }
 
     .footer {
@@ -261,7 +351,6 @@
 
     @media (max-width: 850px) {
       .topbar {
-        align-items: flex-start;
         flex-direction: column;
       }
 
@@ -269,7 +358,7 @@
         grid-column: span 12;
       }
 
-      .stats {
+      .stats, .quick-grid {
         grid-template-columns: repeat(2, 1fr);
       }
 
@@ -277,13 +366,31 @@
         grid-template-columns: 1fr;
       }
 
+      .status-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
       .app {
-        width: min(100% - 24px, 1180px);
-        padding-top: 18px;
+        width: min(100% - 22px, 1180px);
+        padding-top: max(18px, env(safe-area-inset-top));
       }
 
       .card {
         border-radius: 24px;
+        padding: 16px;
+      }
+
+      .actions {
+        width: 100%;
+      }
+
+      .actions button, .pill {
+        flex: 1;
+        text-align: center;
+      }
+
+      .hero-title {
+        font-size: 30px;
       }
     }
   </style>
@@ -327,11 +434,18 @@
 
       <div class="grid">
         <div class="card wide">
-          <h2>Today Command Center</h2>
-          <p class="muted">Top priority for today</p>
-          <h2 style="font-size: 32px; margin-top: 8px;">Win the day. Track the reps.</h2>
+          <div class="actions" style="justify-content: space-between;">
+            <span class="mini-pill" id="statusPill">● Online</span>
+            <span class="mini-pill" id="deviceText">Mac or Web</span>
+          </div>
 
-          <div class="stats">
+          <p class="muted" style="margin-top: 18px;">Today’s focus</p>
+          <h2 class="hero-title" id="focusView">Win the day. Track the reps.</h2>
+
+          <input id="focusInput" class="input" placeholder="Set today's focus..." />
+          <button onclick="saveDailyStatus()">Save focus</button>
+
+          <div class="stats" style="margin-top: 14px;">
             <div class="stat">
               <strong id="taskCount">0</strong>
               <span class="muted">Tasks</span>
@@ -349,19 +463,32 @@
               <span class="muted">Income</span>
             </div>
           </div>
+
+          <div class="quick-grid">
+            <button class="secondary" onclick="quickDials(25)">+25 dials</button>
+            <button class="secondary" onclick="quickDials(50)">+50 dials</button>
+            <button class="secondary" onclick="quickWater(20)">+20 oz water</button>
+            <button class="secondary" onclick="markWorkoutDone()">Workout done</button>
+          </div>
         </div>
 
         <div class="card small">
-          <h2>Live Sync</h2>
-          <p class="muted">Connected to Supabase.</p>
-          <div class="list-item">
-            <span>Status</span>
+          <h2>Daily Status</h2>
+          <div class="status-grid">
+            <button class="status-btn" onclick="setStatus('Working')">Working</button>
+            <button class="status-btn" onclick="setStatus('Gym')">Gym</button>
+            <button class="status-btn" onclick="setStatus('On calls')">Calls</button>
+            <button class="status-btn" onclick="setStatus('Driving')">Driving</button>
+            <button class="status-btn" onclick="setStatus('Relaxing')">Relaxing</button>
+            <button class="status-btn" onclick="setStatus('Offline')">Offline</button>
+          </div>
+
+          <div class="list-item" style="margin-top: 14px;">
+            <span>Sync</span>
             <strong id="syncStatus">Ready</strong>
           </div>
-          <div class="list-item" style="margin-top: 10px;">
-            <span>Device</span>
-            <strong id="deviceText">Web</strong>
-          </div>
+
+          <button class="secondary" style="margin-top: 12px;" onclick="toggleDayComplete()" id="dayCompleteBtn">Mark day complete</button>
         </div>
 
         <div class="card half">
@@ -399,6 +526,9 @@
             <div class="list-item">Closed sales <strong id="salesViewClosed">0</strong></div>
             <div class="list-item">Income <strong id="salesViewIncome">$0</strong></div>
           </div>
+
+          <div class="progress"><span id="incomeProgress"></span></div>
+          <p class="muted" id="incomeProgressText">$0 of $2,000 weekly target</p>
         </div>
 
         <div class="card half">
@@ -419,6 +549,9 @@
             <div class="list-item">Sleep <strong id="healthViewSleep">0h</strong></div>
             <div class="list-item">Workout <strong id="healthViewWorkout">Not logged</strong></div>
           </div>
+
+          <div class="progress"><span id="waterProgress"></span></div>
+          <p class="muted" id="waterProgressText">0 of 80 oz water goal</p>
         </div>
 
         <div class="card half">
@@ -446,15 +579,15 @@
         </div>
 
         <div class="card full">
-          <h2>Next Features</h2>
+          <h2>Home Screen Setup</h2>
           <p class="muted">
-            Next we clean the design, add quick buttons, add progress bars, add live presence, and make the iPhone Home Screen icon feel more like a real app.
+            On iPhone, open this site in Safari, tap Share, then Add to Home Screen. Name it Diogo OS.
           </p>
         </div>
       </div>
 
       <div class="footer">
-        Diogo OS v2, synced with Supabase.
+        Diogo OS v3, synced with Supabase.
       </div>
     </section>
   </main>
@@ -472,6 +605,9 @@
     const syncStatus = document.getElementById("syncStatus");
 
     let currentUser = null;
+    let dailyStatusId = null;
+    let currentStatus = "Online";
+    let dayComplete = false;
 
     document.getElementById("todayText").textContent = new Date().toLocaleDateString(undefined, {
       weekday: "long",
@@ -550,6 +686,7 @@
 
     async function loadAll() {
       if (!currentUser) return;
+
       syncStatus.textContent = "Loading";
 
       await Promise.all([
@@ -558,10 +695,89 @@
         loadSales(),
         loadHealth(),
         loadMoneyGoals(),
-        loadCrm()
+        loadCrm(),
+        loadDailyStatus()
       ]);
 
       syncStatus.textContent = "Synced";
+    }
+
+    async function loadDailyStatus() {
+      const { data, error } = await client
+        .from("daily_status")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .eq("entry_date", todayISO())
+        .maybeSingle();
+
+      if (error) return showError(error.message);
+
+      if (!data) {
+        dailyStatusId = null;
+        currentStatus = "Online";
+        dayComplete = false;
+        updateStatusUI();
+        return;
+      }
+
+      dailyStatusId = data.id;
+      currentStatus = data.status || "Online";
+      dayComplete = !!data.day_complete;
+
+      document.getElementById("focusInput").value = data.focus || "";
+      document.getElementById("focusView").textContent = data.focus || "Win the day. Track the reps.";
+
+      updateStatusUI();
+    }
+
+    function updateStatusUI() {
+      document.getElementById("statusPill").textContent = "● " + currentStatus;
+      document.getElementById("dayCompleteBtn").textContent = dayComplete ? "Day complete" : "Mark day complete";
+
+      document.querySelectorAll(".status-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.textContent.trim() === currentStatus || btn.textContent.trim() === "Calls" && currentStatus === "On calls");
+      });
+    }
+
+    async function saveDailyStatus() {
+      const focus = document.getElementById("focusInput").value.trim();
+
+      const payload = {
+        user_id: currentUser.id,
+        entry_date: todayISO(),
+        status: currentStatus,
+        focus,
+        day_complete: dayComplete,
+        updated_at: new Date().toISOString()
+      };
+
+      let error;
+
+      if (dailyStatusId) {
+        const result = await client.from("daily_status").update(payload).eq("id", dailyStatusId);
+        error = result.error;
+      } else {
+        const result = await client.from("daily_status").insert(payload).select().single();
+        error = result.error;
+        if (result.data) dailyStatusId = result.data.id;
+      }
+
+      if (error) return showError(error.message);
+
+      document.getElementById("focusView").textContent = focus || "Win the day. Track the reps.";
+      await loadDailyStatus();
+    }
+
+    async function setStatus(status) {
+      currentStatus = status;
+      updateStatusUI();
+      await saveDailyStatus();
+    }
+
+    async function toggleDayComplete() {
+      dayComplete = !dayComplete;
+      updateStatusUI();
+      await saveDailyStatus();
     }
 
     async function loadTasks() {
@@ -578,7 +794,6 @@
 
     function renderTasks(tasks) {
       document.getElementById("taskCount").textContent = tasks.length;
-
       const taskList = document.getElementById("taskList");
 
       if (!tasks.length) {
@@ -707,6 +922,12 @@
       await loadSales();
     }
 
+    async function quickDials(amount) {
+      const current = Number(document.getElementById("salesDials").value || 0);
+      document.getElementById("salesDials").value = current + amount;
+      await saveSales();
+    }
+
     async function loadSales() {
       const { data, error } = await client
         .from("sales_entries")
@@ -740,6 +961,10 @@
       document.getElementById("salesAppointments").value = appointments || "";
       document.getElementById("salesClosed").value = closed || "";
       document.getElementById("salesIncome").value = income || "";
+
+      const percent = Math.min(100, Math.round((income / 2000) * 100));
+      document.getElementById("incomeProgress").style.width = percent + "%";
+      document.getElementById("incomeProgressText").textContent = "$" + income.toLocaleString() + " of $2,000 weekly target";
     }
 
     async function saveHealth() {
@@ -774,6 +999,18 @@
       await loadHealth();
     }
 
+    async function quickWater(amount) {
+      const current = Number(document.getElementById("healthWater").value || 0);
+      document.getElementById("healthWater").value = current + amount;
+      await saveHealth();
+    }
+
+    async function markWorkoutDone() {
+      document.getElementById("healthWorkout").value = document.getElementById("healthWorkout").value || "Workout done";
+      await saveHealth();
+      await setStatus("Gym");
+    }
+
     async function loadHealth() {
       const { data, error } = await client
         .from("health_entries")
@@ -797,6 +1034,11 @@
       document.getElementById("healthSteps").value = h.steps || "";
       document.getElementById("healthSleep").value = h.sleep_hours || "";
       document.getElementById("healthWorkout").value = h.workout || "";
+
+      const water = Number(h.water_oz || 0);
+      const waterPercent = Math.min(100, Math.round((water / 80) * 100));
+      document.getElementById("waterProgress").style.width = waterPercent + "%";
+      document.getElementById("waterProgressText").textContent = water + " of 80 oz water goal";
     }
 
     async function addMoneyGoal() {
@@ -846,10 +1088,8 @@
           <div class="list-item">
             <span>${escapeHtml(goal.goal_name)}</span>
             <strong>$${current.toLocaleString()} / $${target.toLocaleString()}</strong>
-            <div style="clear:both; height:8px;"></div>
-            <div style="height:8px; border-radius:999px; background:rgba(255,255,255,0.1); overflow:hidden;">
-              <div style="height:100%; width:${percent}%; background:#f5f5f7;"></div>
-            </div>
+            <div style="clear:both;"></div>
+            <div class="progress"><span style="width:${percent}%;"></span></div>
             <p class="muted">${percent}% complete</p>
             <button class="mini-btn secondary" onclick="deleteRow('money_goals', '${goal.id}', loadMoneyGoals)">Delete</button>
           </div>
@@ -924,7 +1164,7 @@
     }
 
     function startRealtime() {
-      const tables = ["tasks", "notes", "sales_entries", "health_entries", "money_goals", "crm_contacts"];
+      const tables = ["tasks", "notes", "sales_entries", "health_entries", "money_goals", "crm_contacts", "daily_status"];
 
       tables.forEach(table => {
         client
