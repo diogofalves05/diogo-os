@@ -7,6 +7,7 @@
   <meta name="apple-mobile-web-app-title" content="Diogo OS" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#050509" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%23050509'/%3E%3Cstop offset='1' stop-color='%2300ffcc'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='42' fill='url(%23g)'/%3E%3Ccircle cx='90' cy='88' r='48' fill='rgba(255,255,255,0.14)'/%3E%3Ctext x='90' y='104' text-anchor='middle' font-family='Arial' font-size='42' font-weight='700' fill='white'%3ED%3C/text%3E%3C/svg%3E" />
   <title>Diogo OS</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -61,6 +62,22 @@
       width: min(1180px, 92%);
       margin: 0 auto;
       padding: 26px 0 90px;
+    }
+
+    .mobile-app-banner {
+      display: none;
+      margin-bottom: 16px;
+      padding: 14px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.075);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(24px);
+    }
+
+    .mobile-app-banner strong {
+      display: block;
+      margin-bottom: 4px;
+      letter-spacing: -0.03em;
     }
 
     .topbar {
@@ -471,6 +488,17 @@
     .tab-page.active { display: block; }
     .hidden { display: none; }
 
+    .fab {
+      position: fixed;
+      right: 18px;
+      bottom: 92px;
+      z-index: 20;
+      width: auto;
+      padding: 13px 16px;
+      border-radius: 999px;
+      box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+    }
+
     .footer {
       margin-top: 22px;
       color: rgba(245, 245, 247, 0.42);
@@ -489,14 +517,19 @@
       .score-grid { grid-template-columns: 1fr; }
       .crm-dashboard { grid-template-columns: 1fr; }
 
+      .mobile-app-banner {
+        display: block;
+      }
+
       .tabs {
         position: fixed;
         left: 10px;
         right: 10px;
-        bottom: 10px;
+        bottom: max(10px, env(safe-area-inset-bottom));
         top: auto;
         grid-template-columns: repeat(4, 1fr);
         border-radius: 24px;
+        box-shadow: 0 18px 70px rgba(0, 0, 0, 0.45);
       }
 
       .tab-btn {
@@ -504,10 +537,18 @@
         padding: 10px 6px;
       }
 
+      .tab-btn:nth-child(n+5) {
+        display: none;
+      }
+
+      .tabs.show-all .tab-btn {
+        display: block;
+      }
+
       .app {
         width: min(100% - 22px, 1180px);
         padding-top: max(18px, env(safe-area-inset-top));
-        padding-bottom: 135px;
+        padding-bottom: 155px;
       }
 
       .card {
@@ -545,6 +586,11 @@
     </section>
 
     <section id="dashboardView" class="hidden">
+      <div class="mobile-app-banner">
+        <strong>Diogo OS on iPhone</strong>
+        <span class="muted">Open in Safari, tap Share, then Add to Home Screen. Use More to show all tabs.</span>
+      </div>
+
       <div class="topbar">
         <div class="brand">
           <h1>Diogo OS</h1>
@@ -567,6 +613,7 @@
         <button class="tab-btn" onclick="openTab('notes', this)">Notes</button>
         <button class="tab-btn" onclick="openTab('settings', this)">Settings</button>
         <button class="tab-btn" onclick="openTab('backup', this)">Backup</button>
+        <button class="tab-btn" onclick="toggleMobileTabs(this)">More</button>
       </nav>
 
       <section id="tab-home" class="tab-page active">
@@ -869,8 +916,10 @@
         </div>
       </section>
 
+      <button class="fab secondary" onclick="quickAddMenu()">Quick add</button>
+
       <div class="footer">
-        Diogo OS v10.1, backup import added.
+        Diogo OS v11, iPhone polish added.
       </div>
     </section>
   </main>
@@ -1977,6 +2026,56 @@
       tables.forEach(table => {
         client.channel(table + "-channel").on("postgres_changes", { event: "*", schema: "public", table }, () => loadAll()).subscribe();
       });
+    }
+
+    function toggleMobileTabs(btn) {
+      const tabs = document.querySelector(".tabs");
+      tabs.classList.toggle("show-all");
+      btn.textContent = tabs.classList.contains("show-all") ? "Less" : "More";
+    }
+
+    function quickAddMenu() {
+      const choice = prompt("Quick add: task, note, dials, water, workout");
+      if (!choice) return;
+
+      const normalized = choice.toLowerCase().trim();
+
+      if (normalized === "task") {
+        const title = prompt("Task");
+        if (title) {
+          document.getElementById("taskInput").value = title;
+          addTask();
+        }
+        return;
+      }
+
+      if (normalized === "note") {
+        const title = prompt("Note title");
+        if (!title) return;
+        const content = prompt("Note content") || "";
+        document.getElementById("noteTitle").value = title;
+        document.getElementById("noteContent").value = content;
+        addNote();
+        return;
+      }
+
+      if (normalized === "dials") {
+        const amount = Number(prompt("How many dials?") || 0);
+        if (amount > 0) quickDials(amount);
+        return;
+      }
+
+      if (normalized === "water") {
+        const amount = Number(prompt("How many oz?") || 0);
+        if (amount > 0) quickWater(amount);
+        return;
+      }
+
+      if (normalized === "workout") {
+        const workout = prompt("Workout name") || "Workout done";
+        document.getElementById("healthWorkout").value = workout;
+        markWorkoutDone();
+      }
     }
 
     function showError(message) {
