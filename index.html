@@ -117,7 +117,7 @@
       top: 10px;
       z-index: 10;
       display: grid;
-      grid-template-columns: repeat(7, 1fr);
+      grid-template-columns: repeat(8, 1fr);
       gap: 8px;
       margin-bottom: 16px;
       padding: 8px;
@@ -386,7 +386,7 @@
 
     .health-history-grid {
       display: grid;
-      grid-template-columns: repeat(7, 1fr);
+      grid-template-columns: repeat(8, 1fr);
       gap: 10px;
       margin-top: 14px;
     }
@@ -566,6 +566,7 @@
         <button class="tab-btn" onclick="openTab('crm', this)">CRM</button>
         <button class="tab-btn" onclick="openTab('notes', this)">Notes</button>
         <button class="tab-btn" onclick="openTab('settings', this)">Settings</button>
+        <button class="tab-btn" onclick="openTab('backup', this)">Backup</button>
       </nav>
 
       <section id="tab-home" class="tab-page active">
@@ -828,8 +829,32 @@
         </div>
       </section>
 
+      <section id="tab-backup" class="tab-page">
+        <div class="grid">
+          <div class="card full">
+            <h2>Backup</h2>
+            <p class="muted">
+              Export your Diogo OS data into one JSON file. Keep it somewhere safe.
+            </p>
+
+            <button onclick="exportBackup()">Export backup</button>
+
+            <div class="section-list" style="margin-top: 14px;">
+              <div class="list-item">Tasks <strong id="backupTasks">0</strong></div>
+              <div class="list-item">Notes <strong id="backupNotes">0</strong></div>
+              <div class="list-item">Sales entries <strong id="backupSales">0</strong></div>
+              <div class="list-item">Health entries <strong id="backupHealth">0</strong></div>
+              <div class="list-item">Money goals <strong id="backupMoney">0</strong></div>
+              <div class="list-item">CRM contacts <strong id="backupCrm">0</strong></div>
+            </div>
+
+            <p class="muted" id="backupStatus">Ready to export.</p>
+          </div>
+        </div>
+      </section>
+
       <div class="footer">
-        Diogo OS v9, daily score and streaks added.
+        Diogo OS v10, backup export added.
       </div>
     </section>
   </main>
@@ -951,6 +976,7 @@
         loadDailyScore(),
         loadStreaks(),
         loadMoneyGoals(),
+        loadBackupCounts(),
         loadCrm(),
         loadDailyStatus(),
         loadWeeklySales()
@@ -1714,6 +1740,87 @@
       const { error } = await client.from(table).delete().eq("id", id).eq("user_id", currentUser.id);
       if (error) return showError(error.message);
       await callback();
+    }
+
+    async function loadBackupCounts() {
+      if (!currentUser) return;
+
+      const tables = [
+        ["tasks", "backupTasks"],
+        ["notes", "backupNotes"],
+        ["sales_entries", "backupSales"],
+        ["health_entries", "backupHealth"],
+        ["money_goals", "backupMoney"],
+        ["crm_contacts", "backupCrm"]
+      ];
+
+      for (const [table, elementId] of tables) {
+        const { count, error } = await client
+          .from(table)
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", currentUser.id);
+
+        if (!error && document.getElementById(elementId)) {
+          document.getElementById(elementId).textContent = count || 0;
+        }
+      }
+    }
+
+    async function exportBackup() {
+      if (!currentUser) return;
+
+      const status = document.getElementById("backupStatus");
+      status.textContent = "Preparing backup...";
+
+      const tableNames = [
+        "tasks",
+        "notes",
+        "sales_entries",
+        "health_entries",
+        "money_goals",
+        "crm_contacts",
+        "daily_status",
+        "user_settings"
+      ];
+
+      const backup = {
+        app: "Diogo OS",
+        version: "v10",
+        exported_at: new Date().toISOString(),
+        user_email: currentUser.email,
+        data: {}
+      };
+
+      for (const table of tableNames) {
+        const { data, error } = await client
+          .from(table)
+          .select("*")
+          .eq("user_id", currentUser.id);
+
+        if (error) {
+          status.textContent = "Backup failed: " + error.message;
+          return;
+        }
+
+        backup.data[table] = data || [];
+      }
+
+      const blob = new Blob([JSON.stringify(backup, null, 2)], {
+        type: "application/json"
+      });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const date = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = "diogo-os-backup-" + date + ".json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      status.textContent = "Backup exported.";
+      await loadBackupCounts();
     }
 
     function startRealtime() {
