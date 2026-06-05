@@ -834,7 +834,7 @@
           <div class="card full">
             <h2>Backup</h2>
             <p class="muted">
-              Export your Diogo OS data into one JSON file. Keep it somewhere safe.
+              Export your Diogo OS data or import a backup file. Import uses restore missing only, so it avoids replacing your current data.
             </p>
 
             <button onclick="exportBackup()">Export backup</button>
@@ -848,13 +848,29 @@
               <div class="list-item">CRM contacts <strong id="backupCrm">0</strong></div>
             </div>
 
-            <p class="muted" id="backupStatus">Ready to export.</p>
+            <p class="muted" id="backupStatus">Ready.</p>
+          </div>
+
+          <div class="card full">
+            <h2>Import Backup</h2>
+            <p class="muted">
+              Choose a Diogo OS backup JSON file. Preview it first, then restore missing records only.
+            </p>
+
+            <input id="backupFileInput" class="input" type="file" accept="application/json" onchange="previewBackupFile(event)" />
+
+            <div id="importPreview" class="section-list" style="margin-top: 14px;">
+              <p class="muted">No file selected.</p>
+            </div>
+
+            <button class="secondary" onclick="importBackupMissingOnly()">Restore missing only</button>
+            <p class="muted" id="importStatus">Waiting for backup file.</p>
           </div>
         </div>
       </section>
 
       <div class="footer">
-        Diogo OS v10, backup export added.
+        Diogo OS v10.1, backup import added.
       </div>
     </section>
   </main>
@@ -872,6 +888,7 @@
     const syncStatus = document.getElementById("syncStatus");
 
     let currentUser = null;
+    let pendingBackup = null;
     let dailyStatusId = null;
     let settingsId = null;
     let currentStatus = "Online";
@@ -1821,6 +1838,138 @@
 
       status.textContent = "Backup exported.";
       await loadBackupCounts();
+    }
+
+    async function previewBackupFile(event) {
+      const file = event.target.files[0];
+      const importStatus = document.getElementById("importStatus");
+      const importPreview = document.getElementById("importPreview");
+
+      pendingBackup = null;
+
+      if (!file) {
+        importPreview.innerHTML = '<p class="muted">No file selected.</p>';
+        importStatus.textContent = "Waiting for backup file.";
+        return;
+      }
+
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+
+        if (!parsed.data || parsed.app !== "Diogo OS") {
+          importStatus.textContent = "This does not look like a Diogo OS backup.";
+          return;
+        }
+
+        pendingBackup = parsed;
+
+        const data = parsed.data;
+        const counts = {
+          tasks: (data.tasks || []).length,
+          notes: (data.notes || []).length,
+          sales_entries: (data.sales_entries || []).length,
+          health_entries: (data.health_entries || []).length,
+          money_goals: (data.money_goals || []).length,
+          crm_contacts: (data.crm_contacts || []).length,
+          daily_status: (data.daily_status || []).length,
+          user_settings: (data.user_settings || []).length
+        };
+
+        importPreview.innerHTML = `
+          <div class="list-item">Tasks <strong>${counts.tasks}</strong></div>
+          <div class="list-item">Notes <strong>${counts.notes}</strong></div>
+          <div class="list-item">Sales entries <strong>${counts.sales_entries}</strong></div>
+          <div class="list-item">Health entries <strong>${counts.health_entries}</strong></div>
+          <div class="list-item">Money goals <strong>${counts.money_goals}</strong></div>
+          <div class="list-item">CRM contacts <strong>${counts.crm_contacts}</strong></div>
+          <div class="list-item">Daily status <strong>${counts.daily_status}</strong></div>
+          <div class="list-item">Settings <strong>${counts.user_settings}</strong></div>
+        `;
+
+        importStatus.textContent = "Backup ready to restore missing records.";
+      } catch (error) {
+        importStatus.textContent = "Could not read backup file.";
+      }
+    }
+
+    async function importBackupMissingOnly() {
+      const importStatus = document.getElementById("importStatus");
+
+      if (!pendingBackup || !pendingBackup.data) {
+        importStatus.textContent = "Choose a backup file first.";
+        return;
+      }
+
+      importStatus.textContent = "Restoring missing records...";
+
+      const tableNames = [
+        "tasks",
+        "notes",
+        "sales_entries",
+        "health_entries",
+        "money_goals",
+        "crm_contacts",
+        "daily_status",
+        "user_settings"
+      ];
+
+      let inserted = 0;
+      let skipped = 0;
+
+      for (const table of tableNames) {
+        const rows = pendingBackup.data[table] || [];
+
+        for (const originalRow of rows) {
+          const row = { ...originalRow };
+          const oldId = row.id;
+
+          row.user_id = currentUser.id;
+
+          const { data: existing, error: checkError } = await client
+            .from(table)
+            .select("id")
+            .eq("id", oldId)
+            .maybeSingle();
+
+          if (checkError) {
+            importStatus.textContent = "Import stopped: " + checkError.message;
+            return;
+          }
+
+          if (existing) {
+            skipped++;
+            continue;
+          }
+
+          if (table === "user_settings") {
+            const { data: settingsExists } = await client
+              .from("user_settings")
+              .select("id")
+              .eq("user_id", currentUser.id)
+              .maybeSingle();
+
+            if (settingsExists) {
+              skipped++;
+              continue;
+            }
+          }
+
+          const { error: insertError } = await client
+            .from(table)
+            .insert(row);
+
+          if (insertError) {
+            importStatus.textContent = "Import stopped: " + insertError.message;
+            return;
+          }
+
+          inserted++;
+        }
+      }
+
+      importStatus.textContent = "Restore done. Added " + inserted + " records. Skipped " + skipped + ".";
+      await loadAll();
     }
 
     function startRealtime() {
