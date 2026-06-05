@@ -1,1320 +1,1394 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-    <meta name="apple-mobile-web-app-capable" content="yes"/>
-    <meta name="apple-mobile-web-app-title" content="Diogo OS"/>
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-    <meta name="theme-color" content="#050509"/>
-    <title>Diogo OS</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-    * {
-        box-sizing:border-box
-    }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Diogo OS" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#050509" />
+  <title>Diogo OS</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * { box-sizing: border-box; }
 
     :root {
-        --card: rgba(255, 255, 255, .075);
-        --border: rgba(255, 255, 255, .13);
-        --text: #f5f5f7;
-        --muted: rgba(245, 245, 247, .62);
-        --soft: rgba(255, 255, 255, .08);
-        --danger: rgba(255, 80, 80, .16)
+      --bg: #050509;
+      --card: rgba(255, 255, 255, 0.075);
+      --border: rgba(255, 255, 255, 0.13);
+      --text: #f5f5f7;
+      --muted: rgba(245, 245, 247, 0.62);
+      --soft: rgba(255, 255, 255, 0.08);
+      --danger: rgba(255, 80, 80, 0.16);
     }
 
     body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
-        background: radial-gradient(circle at top left, rgba(82, 111, 255, .28), transparent 34%), radial-gradient(circle at top right, rgba(0, 255, 204, .16), transparent 30%), radial-gradient(circle at bottom right, rgba(0, 255, 204, .13), transparent 28%), linear-gradient(135deg, #050509, #0b0d14 55%, #050509);
-        color: var(--text);
-        overflow-x: hidden
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(82, 111, 255, 0.28), transparent 34%),
+        radial-gradient(circle at top right, rgba(0, 255, 204, 0.16), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(0, 255, 204, 0.13), transparent 28%),
+        linear-gradient(135deg, #050509, #0b0d14 55%, #050509);
+      color: var(--text);
+      overflow-x: hidden;
     }
 
     .orb {
-        position: fixed;
-        width: 420px;
-        height: 420px;
-        border-radius: 50%;
-        background: rgba(80, 140, 255, .2);
-        filter: blur(78px);
-        top: -120px;
-        left: -120px;
-        z-index: 0;
-        pointer-events:none
+      position: fixed;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      background: rgba(80, 140, 255, 0.2);
+      filter: blur(78px);
+      top: -120px;
+      left: -120px;
+      z-index: 0;
+      pointer-events: none;
     }
 
     .orb.two {
-        background: rgba(0, 255, 204, .13);
-        top: 62%;
-        left: 70%
+      background: rgba(0, 255, 204, 0.13);
+      top: 62%;
+      left: 70%;
     }
 
     .app {
-        position: relative;
-        z-index: 1;
-        width: min(1180px, 92%);
-        margin: 0 auto;
-        padding:26px 0 90px
+      position: relative;
+      z-index: 1;
+      width: min(1180px, 92%);
+      margin: 0 auto;
+      padding: 26px 0 90px;
     }
 
     .topbar {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-        margin-bottom:18px
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
     }
 
     .brand h1 {
-        margin: 0;
-        font-size: clamp(38px, 7vw, 64px);
-        letter-spacing: -.07em;
-        line-height:.9
+      margin: 0;
+      font-size: clamp(38px, 7vw, 64px);
+      letter-spacing: -0.07em;
+      line-height: 0.9;
     }
 
     .brand p {
-        margin: 8px 0 0;
-        color: var(--muted);
-        font-size:15px
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 15px;
     }
 
     .actions {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        align-items:center
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
     }
 
     .pill, .mini-pill {
-        border: 1px solid var(--border);
-        background: rgba(255, 255, 255, .08);
-        color: rgba(245, 245, 247, .86);
-        border-radius: 999px;
-        backdrop-filter:blur(22px)
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(245, 245, 247, 0.86);
+      border-radius: 999px;
+      backdrop-filter: blur(22px);
     }
 
     .pill {
-        padding: 10px 14px;
-        font-size:14px
+      padding: 10px 14px;
+      font-size: 14px;
     }
 
     .mini-pill {
-        padding: 7px 10px;
-        font-size: 12px;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px
+      padding: 7px 10px;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .tabs {
-        position: sticky;
-        top: 10px;
-        z-index: 10;
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 8px;
-        margin-bottom: 16px;
-        padding: 8px;
-        border: 1px solid var(--border);
-        background: rgba(10, 12, 18, .7);
-        border-radius: 24px;
-        backdrop-filter:blur(28px)
+      position: sticky;
+      top: 10px;
+      z-index: 10;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      background: rgba(10, 12, 18, 0.7);
+      border-radius: 24px;
+      backdrop-filter: blur(28px);
     }
 
     .tab-btn {
-        margin: 0;
-        padding: 12px 10px;
-        border-radius: 17px;
-        background: transparent;
-        color: var(--muted);
-        border: 1px solid transparent;
-        font-size:14px
+      margin: 0;
+      padding: 12px 10px;
+      border-radius: 17px;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid transparent;
+      font-size: 14px;
     }
 
     .tab-btn.active {
-        background: rgba(255, 255, 255, .14);
-        color: var(--text);
-        border-color: rgba(255, 255, 255, .12)
+      background: rgba(255, 255, 255, 0.14);
+      color: var(--text);
+      border-color: rgba(255, 255, 255, 0.12);
     }
 
     .grid {
-        display: grid;
-        grid-template-columns: repeat(12, 1fr);
-        gap:16px
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
     }
 
     .card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        box-shadow: 0 24px 80px rgba(0, 0, 0, .35);
-        backdrop-filter: blur(28px);
-        border-radius: 28px;
-        padding:20px
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(28px);
+      border-radius: 28px;
+      padding: 20px;
     }
 
-    .wide {
-        grid-column:span 8
-    }
-
-    .small {
-        grid-column:span 4
-    }
-
-    .half {
-        grid-column:span 6
-    }
-
-    .full {
-        grid-column:span 12
-    }
+    .wide { grid-column: span 8; }
+    .small { grid-column: span 4; }
+    .half { grid-column: span 6; }
+    .full { grid-column: span 12; }
 
     h2 {
-        margin: 0 0 14px;
-        font-size: 20px;
-        letter-spacing:-.03em
+      margin: 0 0 14px;
+      font-size: 20px;
+      letter-spacing: -0.03em;
     }
 
     .hero-title {
-        font-size: clamp(28px, 4vw, 40px);
-        letter-spacing: -.06em;
-        margin: 8px 0 16px;
-        line-height:1
+      font-size: clamp(28px, 4vw, 40px);
+      letter-spacing: -0.06em;
+      margin: 8px 0 16px;
+      line-height: 1;
     }
 
     .muted {
-        color: var(--muted);
-        font-size:14px
+      color: var(--muted);
+      font-size: 14px;
     }
 
     .auth-box {
-        max-width: 430px;
-        margin:70px auto
+      max-width: 430px;
+      margin: 70px auto;
     }
 
     .input, textarea, button, select {
-        width: 100%;
-        border: 0;
-        outline: 0;
-        border-radius: 18px;
-        padding: 14px 15px;
-        font-size: 15px;
-        font-family:inherit
+      width: 100%;
+      border: 0;
+      outline: 0;
+      border-radius: 18px;
+      padding: 14px 15px;
+      font-size: 15px;
+      font-family: inherit;
     }
 
     .input, textarea, select {
-        background: rgba(255, 255, 255, .095);
-        color: #fff;
-        border: 1px solid var(--border);
-        margin-bottom:10px
+      background: rgba(255, 255, 255, 0.095);
+      color: #fff;
+      border: 1px solid var(--border);
+      margin-bottom: 10px;
     }
 
     textarea {
-        min-height: 86px;
-        resize:vertical
+      min-height: 86px;
+      resize: vertical;
     }
 
     .input::placeholder, textarea::placeholder {
-        color:rgba(245, 245, 247, .43)
+      color: rgba(245, 245, 247, 0.43);
     }
 
     button {
-        cursor: pointer;
-        background: #f5f5f7;
-        color: #07070b;
-        font-weight: 800;
-        margin-top: 8px;
-        transition:transform .15s ease
+      cursor: pointer;
+      background: #f5f5f7;
+      color: #07070b;
+      font-weight: 800;
+      margin-top: 8px;
+      transition: transform 0.15s ease;
     }
 
-    button:active {
-        transform:scale(.98)
-    }
+    button:active { transform: scale(0.98); }
 
     button.secondary {
-        background: rgba(255, 255, 255, .08);
-        color: #f5f5f7;
-        border:1px solid rgba(255, 255, 255, .14)
+      background: rgba(255, 255, 255, 0.08);
+      color: #f5f5f7;
+      border: 1px solid rgba(255, 255, 255, 0.14);
     }
 
     button.danger {
-        background: var(--danger);
-        color: #ffb3b3;
-        border:1px solid rgba(255, 80, 80, .24)
+      background: var(--danger);
+      color: #ffb3b3;
+      border: 1px solid rgba(255, 80, 80, 0.24);
     }
 
     .actions button {
-        width: auto;
-        padding: 11px 14px;
-        margin-top:0
+      width: auto;
+      padding: 11px 14px;
+      margin-top: 0;
     }
 
     .stats {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap:12px
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
     }
 
     .stat {
-        padding: 14px;
-        border-radius: 22px;
-        background: rgba(255, 255, 255, .07);
-        border:1px solid rgba(255, 255, 255, .1)
+      padding: 14px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     .stat strong {
-        display: block;
-        font-size: 28px;
-        letter-spacing: -.05em;
-        margin-bottom:3px
+      display: block;
+      font-size: 28px;
+      letter-spacing: -0.05em;
+      margin-bottom: 3px;
     }
 
     .quick-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
-        margin-top:14px
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 14px;
     }
 
     .quick-grid button {
-        margin: 0;
-        padding: 13px 12px;
-        border-radius:18px
+      margin: 0;
+      padding: 13px 12px;
+      border-radius: 18px;
     }
 
     .row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 12px 0;
-        border-bottom:1px solid rgba(255, 255, 255, .08)
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .left {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        min-width: 0
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
     }
 
     .left input[type="checkbox"] {
-        width: 18px;
-        height:18px
+      width: 18px;
+      height: 18px;
     }
 
     .title.done {
-        color: rgba(245, 245, 247, .42);
-        text-decoration:line-through
+      color: rgba(245, 245, 247, 0.42);
+      text-decoration: line-through;
     }
 
     .mini-btn {
-        width: auto;
-        padding: 8px 10px;
-        border-radius: 12px;
-        margin: 0;
-        font-size: 13px;
-        flex-shrink:0
+      width: auto;
+      padding: 8px 10px;
+      border-radius: 12px;
+      margin: 0;
+      font-size: 13px;
+      flex-shrink: 0;
     }
 
     .section-list {
-        display: grid;
-        gap:10px
+      display: grid;
+      gap: 10px;
     }
 
     .list-item {
-        padding: 12px;
-        border-radius: 18px;
-        background: rgba(255, 255, 255, .06);
-        border:1px solid rgba(255, 255, 255, .09)
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.09);
     }
 
-    .list-item strong {
-        float:right
-    }
+    .list-item strong { float: right; }
 
     .form-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap:10px
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
     }
 
     .progress {
-        height: 9px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, .1);
-        overflow: hidden;
-        margin-top:9px
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+      margin-top: 9px;
     }
 
     .progress span {
-        display: block;
-        height: 100%;
-        width: 0%;
-        border-radius: 999px;
-        background:linear-gradient(90deg, #f5f5f7, rgba(0, 255, 204, .75))
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #f5f5f7, rgba(0, 255, 204, 0.75));
     }
 
     .status-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap:10px
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
     }
 
     .status-btn {
-        margin: 0;
-        padding: 12px 10px;
-        border-radius: 18px;
-        background: var(--soft);
-        color: var(--text);
-        border:1px solid var(--border)
+      margin: 0;
+      padding: 12px 10px;
+      border-radius: 18px;
+      background: var(--soft);
+      color: var(--text);
+      border: 1px solid var(--border);
     }
 
     .status-btn.active {
-        background: #f5f5f7;
-        color:#07070b
+      background: #f5f5f7;
+      color: #07070b;
     }
 
     .history-grid {
-        display: grid;
-        grid-template-columns: repeat(6, 1fr);
-        gap:10px
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
     }
 
     .history-day {
-        padding: 12px;
-        border-radius: 18px;
-        background: rgba(255, 255, 255, .06);
-        border:1px solid rgba(255, 255, 255, .09)
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.09);
     }
 
     .history-day strong {
-        display: block;
-        font-size: 16px;
-        margin-bottom:4px
+      display: block;
+      font-size: 16px;
+      margin-bottom: 4px;
     }
 
-    .tab-page {
-        display:none
-    }
-
-    .tab-page.active {
-        display:block
-    }
-
-    .hidden {
-        display:none
-    }
+    .tab-page { display: none; }
+    .tab-page.active { display: block; }
+    .hidden { display: none; }
 
     .footer {
-        margin-top: 22px;
-        color: rgba(245, 245, 247, .42);
-        font-size: 13px;
-        text-align: center
+      margin-top: 22px;
+      color: rgba(245, 245, 247, 0.42);
+      font-size: 13px;
+      text-align: center;
     }
 
     @media (max-width: 850px) {
-        .topbar {
-            flex-direction:column
-        }
+      .topbar { flex-direction: column; }
+      .wide, .small, .half, .full { grid-column: span 12; }
+      .stats, .quick-grid { grid-template-columns: repeat(2, 1fr); }
+      .form-grid { grid-template-columns: 1fr; }
+      .status-grid { grid-template-columns: repeat(2, 1fr); }
+      .history-grid { grid-template-columns: 1fr; }
 
-        .wide, .small, .half, .full {
-            grid-column:span 12
-        }
+      .tabs {
+        position: fixed;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        top: auto;
+        grid-template-columns: repeat(4, 1fr);
+        border-radius: 24px;
+      }
 
-        .stats, .quick-grid {
-            grid-template-columns:repeat(2, 1fr)
-        }
+      .tab-btn {
+        font-size: 12px;
+        padding: 10px 6px;
+      }
 
-        .form-grid {
-            grid-template-columns:1fr
-        }
+      .app {
+        width: min(100% - 22px, 1180px);
+        padding-top: max(18px, env(safe-area-inset-top));
+        padding-bottom: 135px;
+      }
 
-        .status-grid {
-            grid-template-columns:repeat(2, 1fr)
-        }
+      .card {
+        border-radius: 24px;
+        padding: 16px;
+      }
 
-        .history-grid {
-            grid-template-columns:1fr
-        }
-
-        .tabs {
-            position: fixed;
-            left: 10px;
-            right: 10px;
-            bottom: 10px;
-            top: auto;
-            grid-template-columns: repeat(4, 1fr);
-            border-radius:24px
-        }
-
-        .tab-btn {
-            font-size: 12px;
-            padding:10px 6px
-        }
-
-        .app {
-            width: min(100% - 22px, 1180px);
-            padding-top: max(18px, env(safe-area-inset-top));
-            padding-bottom:135px
-        }
-
-        .card {
-            border-radius: 24px;
-            padding:16px
-        }
-
-        .actions {
-            width:100%
-        }
-
-        .actions button, .pill {
-            flex: 1;
-            text-align:center
-        }
-
-        .hero-title {
-            font-size: 30px
-        }
+      .actions { width: 100%; }
+      .actions button, .pill { flex: 1; text-align: center; }
+      .hero-title { font-size: 30px; }
     }
-    </style>
+  </style>
 </head>
+
 <body>
-    <div class="orb"></div>
-    <div class="orb two"></div>
-    <main class="app">
-        <section id="authView" class="auth-box card">
-            <div class="brand">
-                <h1>Diogo OS</h1>
-                <p>Your personal command center.</p>
+  <div class="orb"></div>
+  <div class="orb two"></div>
+
+  <main class="app">
+    <section id="authView" class="auth-box card">
+      <div class="brand">
+        <h1>Diogo OS</h1>
+        <p>Your personal command center.</p>
+      </div>
+
+      <div style="height: 24px;"></div>
+
+      <input id="emailInput" class="input" type="email" placeholder="Email" />
+      <input id="passwordInput" class="input" type="password" placeholder="Password" />
+
+      <button onclick="signIn()">Log in</button>
+      <button class="secondary" onclick="signUp()">Create account</button>
+
+      <p id="authMessage" class="muted"></p>
+    </section>
+
+    <section id="dashboardView" class="hidden">
+      <div class="topbar">
+        <div class="brand">
+          <h1>Diogo OS</h1>
+          <p id="todayText">Loading today...</p>
+        </div>
+
+        <div class="actions">
+          <span id="userEmail" class="pill">Signed in</span>
+          <button class="secondary" onclick="loadAll()">Refresh</button>
+          <button class="danger" onclick="signOut()">Log out</button>
+        </div>
+      </div>
+
+      <nav class="tabs">
+        <button class="tab-btn active" onclick="openTab('home', this)">Home</button>
+        <button class="tab-btn" onclick="openTab('sales', this)">Sales</button>
+        <button class="tab-btn" onclick="openTab('health', this)">Health</button>
+        <button class="tab-btn" onclick="openTab('money', this)">Money</button>
+        <button class="tab-btn" onclick="openTab('crm', this)">CRM</button>
+        <button class="tab-btn" onclick="openTab('notes', this)">Notes</button>
+        <button class="tab-btn" onclick="openTab('settings', this)">Settings</button>
+      </nav>
+
+      <section id="tab-home" class="tab-page active">
+        <div class="grid">
+          <div class="card wide">
+            <div class="actions" style="justify-content: space-between;">
+              <span class="mini-pill" id="statusPill">● Online</span>
+              <span class="mini-pill" id="deviceText">Mac or Web</span>
             </div>
-            <div style="height:24px"></div>
-            <input id="emailInput" class="input" type="email" placeholder="Email"/>
-            <input id="passwordInput" class="input" type="password" placeholder="Password"/>
-            <button onclick="signIn()">Log in</button>
-            <button class="secondary" onclick="signUp()">Create account</button>
-            <p id="authMessage" class="muted"></p>
-        </section>
-        <section id="dashboardView" class="hidden">
-            <div class="topbar">
-                <div class="brand">
-                    <h1>Diogo OS</h1>
-                    <p id="todayText">Loading today...</p>
-                </div>
-                <div class="actions">
-                    <span id="userEmail" class="pill">Signed in</span>
-                    <button class="secondary" onclick="loadAll()">Refresh</button>
-                    <button class="danger" onclick="signOut()">Log out</button>
-                </div>
+
+            <p class="muted" style="margin-top: 18px;">Today’s focus</p>
+            <h2 class="hero-title" id="focusView">Win the day. Track the reps.</h2>
+
+            <input id="focusInput" class="input" placeholder="Set today's focus..." />
+            <button onclick="saveDailyStatus()">Save focus</button>
+
+            <div class="stats" style="margin-top: 14px;">
+              <div class="stat"><strong id="taskCount">0</strong><span class="muted">Tasks</span></div>
+              <div class="stat"><strong id="dashDials">0</strong><span class="muted">Dials</span></div>
+              <div class="stat"><strong id="dashContacts">0</strong><span class="muted">Contacts</span></div>
+              <div class="stat"><strong id="dashIncome">$0</strong><span class="muted">Income</span></div>
             </div>
-            <nav class="tabs">
-                <button class="tab-btn active" onclick="openTab('home', this)">Home</button>
-                <button class="tab-btn" onclick="openTab('sales', this)">Sales</button>
-                <button class="tab-btn" onclick="openTab('health', this)">Health</button>
-                <button class="tab-btn" onclick="openTab('money', this)">Money</button>
-                <button class="tab-btn" onclick="openTab('crm', this)">CRM</button>
-                <button class="tab-btn" onclick="openTab('notes', this)">Notes</button>
-                <button class="tab-btn" onclick="openTab('settings', this)">Settings</button>
-            </nav>
-            <section id="tab-home" class="tab-page active">
-                <div class="grid">
-                    <div class="card wide">
-                        <div class="actions" style="justify-content:space-between">
-                            <span class="mini-pill" id="statusPill">● Online</span>
-                            <span class="mini-pill" id="deviceText">Mac or Web</span>
-                        </div>
-                        <p class="muted" style="margin-top:18px">Today’s focus</p>
-                        <h2 class="hero-title" id="focusView">Win the day. Track the reps.</h2>
-                        <input id="focusInput" class="input" placeholder="Set today's focus..."/>
-                        <button onclick="saveDailyStatus()">Save focus</button>
-                        <div class="stats" style="margin-top:14px">
-                            <div class="stat">
-                                <strong id="taskCount">0</strong>
-                                <span class="muted">Tasks</span>
-                            </div>
-                            <div class="stat">
-                                <strong id="dashDials">0</strong>
-                                <span class="muted">Dials</span>
-                            </div>
-                            <div class="stat">
-                                <strong id="dashContacts">0</strong>
-                                <span class="muted">Contacts</span>
-                            </div>
-                            <div class="stat">
-                                <strong id="dashIncome">$0</strong>
-                                <span class="muted">Income</span>
-                            </div>
-                        </div>
-                        <div class="quick-grid">
-                            <button class="secondary" onclick="quickDials(25)">+25 dials</button>
-                            <button class="secondary" onclick="quickDials(50)">+50 dials</button>
-                            <button class="secondary" onclick="quickWater(20)">+20 oz water</button>
-                            <button class="secondary" onclick="markWorkoutDone()">Workout done</button>
-                        </div>
-                    </div>
-                    <div class="card small">
-                        <h2>Daily Status</h2>
-                        <div class="status-grid">
-                            <button class="status-btn" onclick="setStatus('Working')">Working</button>
-                            <button class="status-btn" onclick="setStatus('Gym')">Gym</button>
-                            <button class="status-btn" onclick="setStatus('On calls')">Calls</button>
-                            <button class="status-btn" onclick="setStatus('Driving')">Driving</button>
-                            <button class="status-btn" onclick="setStatus('Relaxing')">Relaxing</button>
-                            <button class="status-btn" onclick="setStatus('Offline')">Offline</button>
-                        </div>
-                        <div class="list-item" style="margin-top:14px">
-                            <span>Sync</span>
-                            <strong id="syncStatus">Ready</strong>
-                        </div>
-                        <button class="secondary" style="margin-top:12px" onclick="toggleDayComplete()" id="dayCompleteBtn">Mark day complete</button>
-                    </div>
-                    <div class="card half">
-                        <h2>Tasks</h2>
-                        <div class="actions">
-                            <input id="taskInput" class="input" style="margin:0;flex:1;min-width:180px" placeholder="Add a task..."/>
-                            <button style="width:auto" onclick="addTask()">Add</button>
-                        </div>
-                        <div id="taskList" style="margin-top:14px"></div>
-                    </div>
-                    <div class="card half">
-                        <h2>Today Snapshot</h2>
-                        <div class="section-list">
-                            <div class="list-item">
-                                Water 
-                                <strong id="homeWater">0 oz</strong>
-                            </div>
-                            <div class="list-item">
-                                Steps 
-                                <strong id="homeSteps">0</strong>
-                            </div>
-                            <div class="list-item">
-                                Workout 
-                                <strong id="homeWorkout">Not logged</strong>
-                            </div>
-                            <div class="list-item">
-                                Weekly income 
-                                <strong id="homeWeeklyIncome">$0</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            <section id="tab-sales" class="tab-page">
-                <div class="grid">
-                    <div class="card full">
-                        <h2>Weekly Sales Command</h2>
-                        <div class="stats">
-                            <div class="stat">
-                                <strong id="weeklyDials">0</strong>
-                                <span class="muted">Weekly dials</span>
-                            </div>
-                            <div class="stat">
-                                <strong id="weeklyContacts">0</strong>
-                                <span class="muted">Weekly contacts</span>
-                            </div>
-                            <div class="stat">
-                                <strong id="weeklyClosed">0</strong>
-                                <span class="muted">Weekly sales</span>
-                            </div>
-                            <div class="stat">
-                                <strong id="weeklyIncome">$0</strong>
-                                <span class="muted">Weekly income</span>
-                            </div>
-                        </div>
-                        <div class="progress">
-                            <span id="weeklyIncomeProgress"></span>
-                        </div>
-                        <p class="muted" id="weeklyIncomeText">$0 of weekly target</p>
-                        <div id="salesHistory" class="history-grid" style="margin-top:14px"></div>
-                    </div>
-                    <div class="card full">
-                        <h2>Sales Tracker</h2>
-                        <div class="form-grid">
-                            <input id="salesDials" class="input" type="number" placeholder="Dials"/>
-                            <input id="salesContacts" class="input" type="number" placeholder="Contacts"/>
-                            <input id="salesAppointments" class="input" type="number" placeholder="Appointments"/>
-                            <input id="salesPresentations" class="input" type="number" placeholder="Presentations"/>
-                            <input id="salesApplications" class="input" type="number" placeholder="Applications"/>
-                            <input id="salesClosed" class="input" type="number" placeholder="Closed sales"/>
-                            <input id="salesIncome" class="input" type="number" placeholder="Income"/>
-                        </div>
-                        <button onclick="saveSales()">Save today</button>
-                        <div class="section-list" style="margin-top:14px">
-                            <div class="list-item">
-                                Dials today 
-                                <strong id="salesViewDials">0</strong>
-                            </div>
-                            <div class="list-item">
-                                Contacts 
-                                <strong id="salesViewContacts">0</strong>
-                            </div>
-                            <div class="list-item">
-                                Appointments 
-                                <strong id="salesViewAppointments">0</strong>
-                            </div>
-                            <div class="list-item">
-                                Presentations 
-                                <strong id="salesViewPresentations">0</strong>
-                            </div>
-                            <div class="list-item">
-                                Applications 
-                                <strong id="salesViewApplications">0</strong>
-                            </div>
-                            <div class="list-item">
-                                Closed sales 
-                                <strong id="salesViewClosed">0</strong>
-                            </div>
-                            <div class="list-item">
-                                Income 
-                                <strong id="salesViewIncome">$0</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            <section id="tab-health" class="tab-page">
-                <div class="grid">
-                    <div class="card full">
-                        <h2>Health</h2>
-                        <div class="form-grid">
-                            <input id="healthWeight" class="input" type="number" placeholder="Weight"/>
-                            <input id="healthWater" class="input" type="number" placeholder="Water oz"/>
-                            <input id="healthSteps" class="input" type="number" placeholder="Steps"/>
-                            <input id="healthSleep" class="input" type="number" placeholder="Sleep hours"/>
-                        </div>
-                        <input id="healthWorkout" class="input" placeholder="Workout, example Chest and Triceps"/>
-                        <button onclick="saveHealth()">Save health</button>
-                        <div class="section-list" style="margin-top:14px">
-                            <div class="list-item">
-                                Weight 
-                                <strong id="healthViewWeight">Not logged</strong>
-                            </div>
-                            <div class="list-item">
-                                Water 
-                                <strong id="healthViewWater">0 oz</strong>
-                            </div>
-                            <div class="list-item">
-                                Steps 
-                                <strong id="healthViewSteps">0</strong>
-                            </div>
-                            <div class="list-item">
-                                Sleep 
-                                <strong id="healthViewSleep">0h</strong>
-                            </div>
-                            <div class="list-item">
-                                Workout 
-                                <strong id="healthViewWorkout">Not logged</strong>
-                            </div>
-                        </div>
-                        <div class="progress">
-                            <span id="waterProgress"></span>
-                        </div>
-                        <p class="muted" id="waterProgressText">0 of water goal</p>
-                    </div>
-                </div>
-            </section>
-            <section id="tab-money" class="tab-page">
-                <div class="grid">
-                    <div class="card full">
-                        <h2>Money Goals</h2>
-                        <input id="moneyName" class="input" placeholder="Goal name, example BMW M3"/>
-                        <div class="form-grid">
-                            <input id="moneyTarget" class="input" type="number" placeholder="Target amount"/>
-                            <input id="moneyCurrent" class="input" type="number" placeholder="Current amount"/>
-                        </div>
-                        <button onclick="addMoneyGoal()">Add goal</button>
-                        <div id="moneyList" style="margin-top:14px"></div>
-                    </div>
-                </div>
-            </section>
-            <section id="tab-crm" class="tab-page">
-                <div class="grid">
-                    <div class="card full">
-                        <h2>CRM</h2>
-                        <input id="crmName" class="input" placeholder="Name"/>
-                        <input id="crmCategory" class="input" placeholder="Category, example Prospect or Mentor"/>
-                        <div class="form-grid">
-                            <input id="crmLast" class="input" type="date"/>
-                            <input id="crmNext" class="input" type="date"/>
-                        </div>
-                        <textarea id="crmNotes" placeholder="Notes"></textarea>
-                        <button onclick="addCrm()">Add contact</button>
-                        <div id="crmList" style="margin-top:14px"></div>
-                    </div>
-                </div>
-            </section>
-            <section id="tab-notes" class="tab-page">
-                <div class="grid">
-                    <div class="card full">
-                        <h2>Notes</h2>
-                        <input id="noteTitle" class="input" placeholder="Note title"/>
-                        <textarea id="noteContent" placeholder="Write a note..."></textarea>
-                        <button onclick="addNote()">Save note</button>
-                        <div id="notesList" style="margin-top:14px"></div>
-                    </div>
-                </div>
-            </section>
-            <section id="tab-settings" class="tab-page">
-                <div class="grid">
-                    <div class="card full">
-                        <h2>Settings</h2>
-                        <input id="settingName" class="input" placeholder="Display name"/>
-                        <div class="form-grid">
-                            <input id="settingIncomeGoal" class="input" type="number" placeholder="Weekly income goal"/>
-                            <input id="settingDialGoal" class="input" type="number" placeholder="Daily dial goal"/>
-                            <input id="settingWaterGoal" class="input" type="number" placeholder="Water goal oz"/>
-                            <input id="settingStepGoal" class="input" type="number" placeholder="Step goal"/>
-                        </div>
-                        <button onclick="saveSettings()">Save settings</button>
-                        <p class="muted">These settings control the goals used across your dashboard.</p>
-                    </div>
-                </div>
-            </section>
-            <div class="footer">Diogo OS v5, tabs and settings added.</div>
-        </section>
-    </main>
-    <script>
+
+            <div class="quick-grid">
+              <button class="secondary" onclick="quickDials(25)">+25 dials</button>
+              <button class="secondary" onclick="quickDials(50)">+50 dials</button>
+              <button class="secondary" onclick="quickWater(20)">+20 oz water</button>
+              <button class="secondary" onclick="markWorkoutDone()">Workout done</button>
+            </div>
+          </div>
+
+          <div class="card small">
+            <h2>Daily Status</h2>
+            <div class="status-grid">
+              <button class="status-btn" onclick="setStatus('Working')">Working</button>
+              <button class="status-btn" onclick="setStatus('Gym')">Gym</button>
+              <button class="status-btn" onclick="setStatus('On calls')">Calls</button>
+              <button class="status-btn" onclick="setStatus('Driving')">Driving</button>
+              <button class="status-btn" onclick="setStatus('Relaxing')">Relaxing</button>
+              <button class="status-btn" onclick="setStatus('Offline')">Offline</button>
+            </div>
+
+            <div class="list-item" style="margin-top: 14px;">
+              <span>Sync</span>
+              <strong id="syncStatus">Ready</strong>
+            </div>
+
+            <button class="secondary" style="margin-top: 12px;" onclick="toggleDayComplete()" id="dayCompleteBtn">Mark day complete</button>
+          </div>
+
+          <div class="card half">
+            <h2>Tasks</h2>
+            <div class="actions">
+              <input id="taskInput" class="input" style="margin: 0; flex: 1; min-width: 180px;" placeholder="Add a task..." />
+              <button style="width: auto;" onclick="addTask()">Add</button>
+              <button class="secondary" style="width: auto;" onclick="clearCompletedTasks()">Clear done</button>
+            </div>
+            <div id="taskList" style="margin-top: 14px;"></div>
+          </div>
+
+          <div class="card half">
+            <h2>Today Snapshot</h2>
+            <div class="section-list">
+              <div class="list-item">Water <strong id="homeWater">0 oz</strong></div>
+              <div class="list-item">Steps <strong id="homeSteps">0</strong></div>
+              <div class="list-item">Workout <strong id="homeWorkout">Not logged</strong></div>
+              <div class="list-item">Weekly income <strong id="homeWeeklyIncome">$0</strong></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-sales" class="tab-page">
+        <div class="grid">
+          <div class="card full">
+            <h2>Weekly Sales Command</h2>
+            <div class="stats">
+              <div class="stat"><strong id="weeklyDials">0</strong><span class="muted">Weekly dials</span></div>
+              <div class="stat"><strong id="weeklyContacts">0</strong><span class="muted">Weekly contacts</span></div>
+              <div class="stat"><strong id="weeklyClosed">0</strong><span class="muted">Weekly sales</span></div>
+              <div class="stat"><strong id="weeklyIncome">$0</strong><span class="muted">Weekly income</span></div>
+            </div>
+
+            <div class="progress"><span id="weeklyIncomeProgress"></span></div>
+            <p class="muted" id="weeklyIncomeText">$0 of weekly target</p>
+            <div id="salesHistory" class="history-grid" style="margin-top: 14px;"></div>
+          </div>
+
+          <div class="card full">
+            <h2>Sales Tracker</h2>
+            <div class="form-grid">
+              <input id="salesDials" class="input" type="number" placeholder="Dials" />
+              <input id="salesContacts" class="input" type="number" placeholder="Contacts" />
+              <input id="salesAppointments" class="input" type="number" placeholder="Appointments" />
+              <input id="salesPresentations" class="input" type="number" placeholder="Presentations" />
+              <input id="salesApplications" class="input" type="number" placeholder="Applications" />
+              <input id="salesClosed" class="input" type="number" placeholder="Closed sales" />
+              <input id="salesIncome" class="input" type="number" placeholder="Income" />
+            </div>
+            <button onclick="saveSales()">Save today</button>
+
+            <div class="section-list" style="margin-top: 14px;">
+              <div class="list-item">Dials today <strong id="salesViewDials">0</strong></div>
+              <div class="list-item">Contacts <strong id="salesViewContacts">0</strong></div>
+              <div class="list-item">Appointments <strong id="salesViewAppointments">0</strong></div>
+              <div class="list-item">Presentations <strong id="salesViewPresentations">0</strong></div>
+              <div class="list-item">Applications <strong id="salesViewApplications">0</strong></div>
+              <div class="list-item">Closed sales <strong id="salesViewClosed">0</strong></div>
+              <div class="list-item">Income <strong id="salesViewIncome">$0</strong></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-health" class="tab-page">
+        <div class="grid">
+          <div class="card full">
+            <h2>Health</h2>
+            <div class="form-grid">
+              <input id="healthWeight" class="input" type="number" placeholder="Weight" />
+              <input id="healthWater" class="input" type="number" placeholder="Water oz" />
+              <input id="healthSteps" class="input" type="number" placeholder="Steps" />
+              <input id="healthSleep" class="input" type="number" placeholder="Sleep hours" />
+            </div>
+            <input id="healthWorkout" class="input" placeholder="Workout, example Chest and Triceps" />
+            <button onclick="saveHealth()">Save health</button>
+
+            <div class="section-list" style="margin-top: 14px;">
+              <div class="list-item">Weight <strong id="healthViewWeight">Not logged</strong></div>
+              <div class="list-item">Water <strong id="healthViewWater">0 oz</strong></div>
+              <div class="list-item">Steps <strong id="healthViewSteps">0</strong></div>
+              <div class="list-item">Sleep <strong id="healthViewSleep">0h</strong></div>
+              <div class="list-item">Workout <strong id="healthViewWorkout">Not logged</strong></div>
+            </div>
+
+            <div class="progress"><span id="waterProgress"></span></div>
+            <p class="muted" id="waterProgressText">0 of water goal</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-money" class="tab-page">
+        <div class="grid">
+          <div class="card full">
+            <h2>Money Goals</h2>
+            <input id="moneyName" class="input" placeholder="Goal name, example BMW M3" />
+            <div class="form-grid">
+              <input id="moneyTarget" class="input" type="number" placeholder="Target amount" />
+              <input id="moneyCurrent" class="input" type="number" placeholder="Current amount" />
+            </div>
+            <button onclick="addMoneyGoal()">Add goal</button>
+            <div id="moneyList" style="margin-top: 14px;"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-crm" class="tab-page">
+        <div class="grid">
+          <div class="card full">
+            <h2>CRM</h2>
+            <input id="crmName" class="input" placeholder="Name" />
+            <input id="crmCategory" class="input" placeholder="Category, example Prospect or Mentor" />
+            <div class="form-grid">
+              <input id="crmLast" class="input" type="date" />
+              <input id="crmNext" class="input" type="date" />
+            </div>
+            <textarea id="crmNotes" placeholder="Notes"></textarea>
+            <button onclick="addCrm()">Add contact</button>
+            <div id="crmList" style="margin-top: 14px;"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-notes" class="tab-page">
+        <div class="grid">
+          <div class="card full">
+            <h2>Notes</h2>
+            <input id="noteTitle" class="input" placeholder="Note title" />
+            <textarea id="noteContent" placeholder="Write a note..."></textarea>
+            <button onclick="addNote()">Save note</button>
+            <div id="notesList" style="margin-top: 14px;"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-settings" class="tab-page">
+        <div class="grid">
+          <div class="card full">
+            <h2>Settings</h2>
+            <input id="settingName" class="input" placeholder="Display name" />
+            <div class="form-grid">
+              <input id="settingIncomeGoal" class="input" type="number" placeholder="Weekly income goal" />
+              <input id="settingDialGoal" class="input" type="number" placeholder="Daily dial goal" />
+              <input id="settingWaterGoal" class="input" type="number" placeholder="Water goal oz" />
+              <input id="settingStepGoal" class="input" type="number" placeholder="Step goal" />
+            </div>
+            <button onclick="saveSettings()">Save settings</button>
+            <p class="muted">These settings control the goals used across your dashboard.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="footer">
+        Diogo OS v6, edit tools added.
+      </div>
+    </section>
+  </main>
+
+  <script>
     const SUPABASE_URL = "https://gztozbdnyphpofccvwvc.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6dG96YmRueXBocG9mY2N2d3ZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MjUyNzksImV4cCI6MjA5NjEwMTI3OX0.V1XbII8XqS7vuIYcoxf0aL0mAlluatj_xdNQTOHih_A";
+
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const authView = document.getElementById("authView"),
-        dashboardView = document.getElementById("dashboardView"),
-        authMessage = document.getElementById("authMessage"),
-        userEmail = document.getElementById("userEmail"),
-        syncStatus = document.getElementById("syncStatus");
-    let currentUser = null,
-        dailyStatusId = null,
-        settingsId = null,
-        currentStatus = "Online",
-        dayComplete = false,
-        settings = {
+
+    const authView = document.getElementById("authView");
+    const dashboardView = document.getElementById("dashboardView");
+    const authMessage = document.getElementById("authMessage");
+    const userEmail = document.getElementById("userEmail");
+    const syncStatus = document.getElementById("syncStatus");
+
+    let currentUser = null;
+    let dailyStatusId = null;
+    let settingsId = null;
+    let currentStatus = "Online";
+    let dayComplete = false;
+    let settings = {
+      display_name: "Diogo",
+      weekly_income_goal: 2000,
+      daily_dial_goal: 100,
+      water_goal_oz: 80,
+      step_goal: 10000
+    };
+
+    document.getElementById("todayText").textContent = new Date().toLocaleDateString(undefined, {
+      weekday: "long",
+      month: "long",
+      day: "numeric"
+    });
+
+    document.getElementById("deviceText").textContent = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? "iPhone" : "Mac or Web";
+
+    function openTab(name, btn) {
+      document.querySelectorAll(".tab-page").forEach(page => page.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(tab => tab.classList.remove("active"));
+      document.getElementById("tab-" + name).classList.add("active");
+      btn.classList.add("active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function todayISO() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function startOfWeekISO() {
+      const now = new Date();
+      const day = now.getDay();
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(now.setDate(diff));
+      monday.setHours(0, 0, 0, 0);
+      return monday.toISOString().slice(0, 10);
+    }
+
+    async function checkSession() {
+      const { data } = await client.auth.getSession();
+      if (data.session) {
+        currentUser = data.session.user;
+        showDashboard();
+      } else {
+        showAuth();
+      }
+    }
+
+    function showAuth() {
+      authView.classList.remove("hidden");
+      dashboardView.classList.add("hidden");
+    }
+
+    async function showDashboard() {
+      authView.classList.add("hidden");
+      dashboardView.classList.remove("hidden");
+      userEmail.textContent = currentUser.email;
+      await loadAll();
+      startRealtime();
+    }
+
+    async function signUp() {
+      const email = document.getElementById("emailInput").value.trim();
+      const password = document.getElementById("passwordInput").value.trim();
+      authMessage.textContent = "Creating account...";
+      const { error } = await client.auth.signUp({ email, password });
+      authMessage.textContent = error ? error.message : "Account created. Check your email if needed.";
+    }
+
+    async function signIn() {
+      const email = document.getElementById("emailInput").value.trim();
+      const password = document.getElementById("passwordInput").value.trim();
+      authMessage.textContent = "Logging in...";
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
+      if (error) {
+        authMessage.textContent = error.message;
+        return;
+      }
+      currentUser = data.user;
+      showDashboard();
+    }
+
+    async function signOut() {
+      await client.auth.signOut();
+      currentUser = null;
+      showAuth();
+    }
+
+    async function loadAll() {
+      if (!currentUser) return;
+      syncStatus.textContent = "Loading";
+      await loadSettings();
+      await Promise.all([
+        loadTasks(),
+        loadNotes(),
+        loadSales(),
+        loadHealth(),
+        loadMoneyGoals(),
+        loadCrm(),
+        loadDailyStatus(),
+        loadWeeklySales()
+      ]);
+      syncStatus.textContent = "Synced";
+    }
+
+    async function loadSettings() {
+      const { data, error } = await client.from("user_settings").select("*").eq("user_id", currentUser.id).maybeSingle();
+      if (error) return showError(error.message);
+
+      if (!data) {
+        const { data: created, error: insertError } = await client
+          .from("user_settings")
+          .insert({
+            user_id: currentUser.id,
             display_name: "Diogo",
             weekly_income_goal: 2000,
             daily_dial_goal: 100,
             water_goal_oz: 80,
-            step_goal: 10000
-        };
-    document.getElementById("todayText").textContent = new Date().toLocaleDateString(undefined, {
-        weekday: "long",
-        month: "long",
-        day: "numeric"
-    });
-    document.getElementById("deviceText").textContent = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? "iPhone" : "Mac or Web";
-    function openTab(name, btn) {
-        document.querySelectorAll(".tab-page").forEach(p => p.classList.remove("active"));
-        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-        document.getElementById("tab-" + name).classList.add("active");
-        btn.classList.add("active");
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-        })
+            step_goal: 10000,
+            theme: "black glass"
+          })
+          .select()
+          .single();
+
+        if (insertError) return showError(insertError.message);
+        settingsId = created.id;
+        settings = created;
+      } else {
+        settingsId = data.id;
+        settings = { ...settings, ...data };
+      }
+
+      document.getElementById("settingName").value = settings.display_name || "Diogo";
+      document.getElementById("settingIncomeGoal").value = settings.weekly_income_goal || 2000;
+      document.getElementById("settingDialGoal").value = settings.daily_dial_goal || 100;
+      document.getElementById("settingWaterGoal").value = settings.water_goal_oz || 80;
+      document.getElementById("settingStepGoal").value = settings.step_goal || 10000;
     }
-    function todayISO() {
-        return new Date().toISOString().slice(0, 10)
-    }
-    function startOfWeekISO() {
-        const now = new Date(),
-            day = now.getDay(),
-            diff = now.getDate() - day + (day === 0 ? -6 : 1),
-            monday = new Date(now.setDate(diff));
-        monday.setHours(0, 0, 0, 0);
-        return monday.toISOString().slice(0, 10)
-    }
-    async function checkSession() {
-        const {data} = await client.auth.getSession();
-        if (data.session) {
-            currentUser = data.session.user;
-            showDashboard()
-        } else
-            showAuth()
-    }
-    function showAuth() {
-        authView.classList.remove("hidden");
-        dashboardView.classList.add("hidden")
-    }
-    async function showDashboard() {
-        authView.classList.add("hidden");
-        dashboardView.classList.remove("hidden");
-        userEmail.textContent = currentUser.email;
-        await loadAll();
-        startRealtime()
-    }
-    async function signUp() {
-        const email = document.getElementById("emailInput").value.trim(),
-            password = document.getElementById("passwordInput").value.trim();
-        authMessage.textContent = "Creating account...";
-        const {error} = await client.auth.signUp({
-            email,
-            password
-        });
-        authMessage.textContent = error ? error.message : "Account created. Check your email if needed."
-    }
-    async function signIn() {
-        const email = document.getElementById("emailInput").value.trim(),
-            password = document.getElementById("passwordInput").value.trim();
-        authMessage.textContent = "Logging in...";
-        const {data, error} = await client.auth.signInWithPassword({
-            email,
-            password
-        });
-        if (error) {
-            authMessage.textContent = error.message;
-            return
-        }
-        currentUser = data.user;
-        showDashboard()
-    }
-    async function signOut() {
-        await client.auth.signOut();
-        currentUser = null;
-        showAuth()
-    }
-    async function loadAll() {
-        if (!currentUser)
-            return;
-        syncStatus.textContent = "Loading";
-        await loadSettings();
-        await Promise.all([loadTasks(), loadNotes(), loadSales(), loadHealth(), loadMoneyGoals(), loadCrm(), loadDailyStatus(), loadWeeklySales()]);
-        syncStatus.textContent = "Synced"
-    }
-    async function loadSettings() {
-        const {data, error} = await client.from("user_settings").select("*").eq("user_id", currentUser.id).maybeSingle();
-        if (error)
-            return showError(error.message);
-        if (!data) {
-            const {data: created, error: insertError} = await client.from("user_settings").insert({
-                user_id: currentUser.id,
-                display_name: "Diogo",
-                weekly_income_goal: 2000,
-                daily_dial_goal: 100,
-                water_goal_oz: 80,
-                step_goal: 10000,
-                theme: "black glass"
-            }).select().single();
-            if (insertError)
-                return showError(insertError.message);
-            settingsId = created.id;
-            settings = created
-        } else {
-            settingsId = data.id;
-            settings = {
-                ...settings,
-                ...data
-            }
-        }
-        document.getElementById("settingName").value = settings.display_name || "Diogo";
-        document.getElementById("settingIncomeGoal").value = settings.weekly_income_goal || 2000;
-        document.getElementById("settingDialGoal").value = settings.daily_dial_goal || 100;
-        document.getElementById("settingWaterGoal").value = settings.water_goal_oz || 80;
-        document.getElementById("settingStepGoal").value = settings.step_goal || 10000
-    }
+
     async function saveSettings() {
-        const payload = {
-            user_id: currentUser.id,
-            display_name: document.getElementById("settingName").value.trim() || "Diogo",
-            weekly_income_goal: Number(document.getElementById("settingIncomeGoal").value || 2000),
-            daily_dial_goal: Number(document.getElementById("settingDialGoal").value || 100),
-            water_goal_oz: Number(document.getElementById("settingWaterGoal").value || 80),
-            step_goal: Number(document.getElementById("settingStepGoal").value || 10000),
-            theme: "black glass",
-            updated_at: new Date().toISOString()
-        };
-        const {error} = await client.from("user_settings").update(payload).eq("id", settingsId);
-        if (error)
-            return showError(error.message);
-        settings = {
-            ...settings,
-            ...payload
-        };
-        await loadAll()
+      const payload = {
+        user_id: currentUser.id,
+        display_name: document.getElementById("settingName").value.trim() || "Diogo",
+        weekly_income_goal: Number(document.getElementById("settingIncomeGoal").value || 2000),
+        daily_dial_goal: Number(document.getElementById("settingDialGoal").value || 100),
+        water_goal_oz: Number(document.getElementById("settingWaterGoal").value || 80),
+        step_goal: Number(document.getElementById("settingStepGoal").value || 10000),
+        theme: "black glass",
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await client.from("user_settings").update(payload).eq("id", settingsId);
+      if (error) return showError(error.message);
+      settings = { ...settings, ...payload };
+      await loadAll();
     }
+
     async function loadDailyStatus() {
-        const {data, error} = await client.from("daily_status").select("*").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle();
-        if (error)
-            return showError(error.message);
-        if (!data) {
-            dailyStatusId = null;
-            currentStatus = "Online";
-            dayComplete = false;
-            updateStatusUI();
-            return
-        }
-        dailyStatusId = data.id;
-        currentStatus = data.status || "Online";
-        dayComplete = !!data.day_complete;
-        document.getElementById("focusInput").value = data.focus || "";
-        document.getElementById("focusView").textContent = data.focus || "Win the day. Track the reps.";
-        updateStatusUI()
+      const { data, error } = await client.from("daily_status").select("*").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle();
+      if (error) return showError(error.message);
+
+      if (!data) {
+        dailyStatusId = null;
+        currentStatus = "Online";
+        dayComplete = false;
+        updateStatusUI();
+        return;
+      }
+
+      dailyStatusId = data.id;
+      currentStatus = data.status || "Online";
+      dayComplete = !!data.day_complete;
+      document.getElementById("focusInput").value = data.focus || "";
+      document.getElementById("focusView").textContent = data.focus || "Win the day. Track the reps.";
+      updateStatusUI();
     }
+
     function updateStatusUI() {
-        document.getElementById("statusPill").textContent = "● " + currentStatus;
-        document.getElementById("dayCompleteBtn").textContent = dayComplete ? "Day complete" : "Mark day complete";
-        document.querySelectorAll(".status-btn").forEach(btn => btn.classList.toggle("active", btn.textContent.trim() === currentStatus || btn.textContent.trim() === "Calls" && currentStatus === "On calls"))
+      document.getElementById("statusPill").textContent = "● " + currentStatus;
+      document.getElementById("dayCompleteBtn").textContent = dayComplete ? "Day complete" : "Mark day complete";
+      document.querySelectorAll(".status-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.textContent.trim() === currentStatus || btn.textContent.trim() === "Calls" && currentStatus === "On calls");
+      });
     }
+
     async function saveDailyStatus() {
-        const focus = document.getElementById("focusInput").value.trim(),
-            payload = {
-                user_id: currentUser.id,
-                entry_date: todayISO(),
-                status: currentStatus,
-                focus,
-                day_complete: dayComplete,
-                updated_at: new Date().toISOString()
-            };
-        let error;
-        if (dailyStatusId) {
-            const result = await client.from("daily_status").update(payload).eq("id", dailyStatusId);
-            error = result.error
-        } else {
-            const result = await client.from("daily_status").insert(payload).select().single();
-            error = result.error;
-            if (result.data)
-                dailyStatusId = result.data.id
-        }
-        if (error)
-            return showError(error.message);
-        document.getElementById("focusView").textContent = focus || "Win the day. Track the reps.";
-        await loadDailyStatus()
+      const focus = document.getElementById("focusInput").value.trim();
+      const payload = {
+        user_id: currentUser.id,
+        entry_date: todayISO(),
+        status: currentStatus,
+        focus,
+        day_complete: dayComplete,
+        updated_at: new Date().toISOString()
+      };
+
+      let error;
+      if (dailyStatusId) {
+        const result = await client.from("daily_status").update(payload).eq("id", dailyStatusId);
+        error = result.error;
+      } else {
+        const result = await client.from("daily_status").insert(payload).select().single();
+        error = result.error;
+        if (result.data) dailyStatusId = result.data.id;
+      }
+
+      if (error) return showError(error.message);
+      document.getElementById("focusView").textContent = focus || "Win the day. Track the reps.";
+      await loadDailyStatus();
     }
+
     async function setStatus(status) {
-        currentStatus = status;
-        updateStatusUI();
-        await saveDailyStatus()
+      currentStatus = status;
+      updateStatusUI();
+      await saveDailyStatus();
     }
+
     async function toggleDayComplete() {
-        dayComplete = !dayComplete;
-        updateStatusUI();
-        await saveDailyStatus()
+      dayComplete = !dayComplete;
+      updateStatusUI();
+      await saveDailyStatus();
     }
+
     async function loadTasks() {
-        const {data, error} = await client.from("tasks").select("*").eq("user_id", currentUser.id).order("created_at", {
-            ascending: false
-        });
-        if (error)
-            return showError(error.message);
-        renderTasks(data || [])
+      const { data, error } = await client.from("tasks").select("*").eq("user_id", currentUser.id).order("created_at", { ascending: false });
+      if (error) return showError(error.message);
+      renderTasks(data || []);
     }
+
     function renderTasks(tasks) {
-        document.getElementById("taskCount").textContent = tasks.length;
-        const taskList = document.getElementById("taskList");
-        if (!tasks.length) {
-            taskList.innerHTML = '<p class="muted">No tasks yet. Add your first one.</p>';
-            return
-        }
-        taskList.innerHTML = tasks.map(task => `<div class="row"><div class="left"><input type="checkbox" ${task.completed ? "checked" : ""} onchange="toggleTask('${task.id}', ${!task.completed})"/><span class="title ${task.completed ? "done" : ""}">${escapeHtml(task.title)}</span></div><button class="mini-btn secondary" onclick="deleteTask('${task.id}')">Delete</button></div>`).join("")
+      document.getElementById("taskCount").textContent = tasks.length;
+      const taskList = document.getElementById("taskList");
+      if (!tasks.length) {
+        taskList.innerHTML = '<p class="muted">No tasks yet. Add your first one.</p>';
+        return;
+      }
+      taskList.innerHTML = tasks.map(task => `
+        <div class="row">
+          <div class="left">
+            <input type="checkbox" ${task.completed ? "checked" : ""} onchange="toggleTask('${task.id}', ${!task.completed})" />
+            <span class="title ${task.completed ? "done" : ""}">${escapeHtml(task.title)}</span>
+          </div>
+          <div class="actions">
+            <button class="mini-btn secondary" onclick="editTask('${task.id}', '${escapeJs(task.title)}')">Edit</button>
+            <button class="mini-btn secondary" onclick="deleteTask('${task.id}')">Delete</button>
+          </div>
+        </div>
+      `).join("");
     }
+
     async function addTask() {
-        const input = document.getElementById("taskInput"),
-            title = input.value.trim();
-        if (!title)
-            return;
-        const {error} = await client.from("tasks").insert({
-            title,
-            user_id: currentUser.id
-        });
-        if (error)
-            return showError(error.message);
-        input.value = "";
-        await loadTasks()
+      const input = document.getElementById("taskInput");
+      const title = input.value.trim();
+      if (!title) return;
+      const { error } = await client.from("tasks").insert({ title, user_id: currentUser.id });
+      if (error) return showError(error.message);
+      input.value = "";
+      await loadTasks();
     }
+
+    async function editTask(id, oldTitle) {
+      const title = prompt("Edit task", oldTitle);
+      if (title === null || !title.trim()) return;
+      const { error } = await client.from("tasks").update({ title: title.trim(), updated_at: new Date().toISOString() }).eq("id", id).eq("user_id", currentUser.id);
+      if (error) return showError(error.message);
+      await loadTasks();
+    }
+
     async function toggleTask(id, completed) {
-        const {error} = await client.from("tasks").update({
-            completed
-        }).eq("id", id).eq("user_id", currentUser.id);
-        if (error)
-            return showError(error.message);
-        await loadTasks()
+      const { error } = await client.from("tasks").update({ completed, updated_at: new Date().toISOString() }).eq("id", id).eq("user_id", currentUser.id);
+      if (error) return showError(error.message);
+      await loadTasks();
     }
+
     async function deleteTask(id) {
-        const {error} = await client.from("tasks").delete().eq("id", id).eq("user_id", currentUser.id);
-        if (error)
-            return showError(error.message);
-        await loadTasks()
+      const { error } = await client.from("tasks").delete().eq("id", id).eq("user_id", currentUser.id);
+      if (error) return showError(error.message);
+      await loadTasks();
     }
+
+    async function clearCompletedTasks() {
+      const { error } = await client.from("tasks").delete().eq("user_id", currentUser.id).eq("completed", true);
+      if (error) return showError(error.message);
+      await loadTasks();
+    }
+
     async function addNote() {
-        const title = document.getElementById("noteTitle").value.trim(),
-            content = document.getElementById("noteContent").value.trim();
-        if (!title)
-            return;
-        const {error} = await client.from("notes").insert({
-            user_id: currentUser.id,
-            title,
-            content
-        });
-        if (error)
-            return showError(error.message);
-        document.getElementById("noteTitle").value = "";
-        document.getElementById("noteContent").value = "";
-        await loadNotes()
+      const title = document.getElementById("noteTitle").value.trim();
+      const content = document.getElementById("noteContent").value.trim();
+      if (!title) return;
+      const { error } = await client.from("notes").insert({ user_id: currentUser.id, title, content });
+      if (error) return showError(error.message);
+      document.getElementById("noteTitle").value = "";
+      document.getElementById("noteContent").value = "";
+      await loadNotes();
     }
+
     async function loadNotes() {
-        const {data, error} = await client.from("notes").select("*").eq("user_id", currentUser.id).order("created_at", {
-            ascending: false
-        });
-        if (error)
-            return showError(error.message);
-        const notesList = document.getElementById("notesList");
-        if (!data.length) {
-            notesList.innerHTML = '<p class="muted">No notes yet.</p>';
-            return
-        }
-        notesList.innerHTML = data.map(note => `<div class="list-item"><strong style="float:none;">${escapeHtml(note.title)}</strong><p class="muted">${escapeHtml(note.content || "")}</p><button class="mini-btn secondary" onclick="deleteRow('notes', '${note.id}', loadNotes)">Delete</button></div>`).join("")
+      const { data, error } = await client.from("notes").select("*").eq("user_id", currentUser.id).order("created_at", { ascending: false });
+      if (error) return showError(error.message);
+      const notesList = document.getElementById("notesList");
+      if (!data.length) {
+        notesList.innerHTML = '<p class="muted">No notes yet.</p>';
+        return;
+      }
+      notesList.innerHTML = data.map(note => `
+        <div class="list-item">
+          <strong style="float:none;">${escapeHtml(note.title)}</strong>
+          <p class="muted">${escapeHtml(note.content || "")}</p>
+          <div class="actions">
+            <button class="mini-btn secondary" onclick="editNote('${note.id}', '${escapeJs(note.title)}', '${escapeJs(note.content || "")}')">Edit</button>
+            <button class="mini-btn secondary" onclick="deleteRow('notes', '${note.id}', loadNotes)">Delete</button>
+          </div>
+        </div>
+      `).join("");
     }
+
+    async function editNote(id, oldTitle, oldContent) {
+      const title = prompt("Edit note title", oldTitle);
+      if (title === null || !title.trim()) return;
+      const content = prompt("Edit note content", oldContent);
+      if (content === null) return;
+      const { error } = await client.from("notes").update({ title: title.trim(), content, updated_at: new Date().toISOString() }).eq("id", id).eq("user_id", currentUser.id);
+      if (error) return showError(error.message);
+      await loadNotes();
+    }
+
     async function saveSales() {
-        const payload = {
-            user_id: currentUser.id,
-            entry_date: todayISO(),
-            dials: Number(document.getElementById("salesDials").value || 0),
-            contacts: Number(document.getElementById("salesContacts").value || 0),
-            appointments: Number(document.getElementById("salesAppointments").value || 0),
-            presentations: Number(document.getElementById("salesPresentations").value || 0),
-            applications: Number(document.getElementById("salesApplications").value || 0),
-            closed_sales: Number(document.getElementById("salesClosed").value || 0),
-            income: Number(document.getElementById("salesIncome").value || 0)
-        };
-        const {data: existing} = await client.from("sales_entries").select("id").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle();
-        let error;
-        if (existing) {
-            const result = await client.from("sales_entries").update(payload).eq("id", existing.id);
-            error = result.error
-        } else {
-            const result = await client.from("sales_entries").insert(payload);
-            error = result.error
-        }
-        if (error)
-            return showError(error.message);
-        await loadSales();
-        await loadWeeklySales()
+      const payload = {
+        user_id: currentUser.id,
+        entry_date: todayISO(),
+        dials: Number(document.getElementById("salesDials").value || 0),
+        contacts: Number(document.getElementById("salesContacts").value || 0),
+        appointments: Number(document.getElementById("salesAppointments").value || 0),
+        presentations: Number(document.getElementById("salesPresentations").value || 0),
+        applications: Number(document.getElementById("salesApplications").value || 0),
+        closed_sales: Number(document.getElementById("salesClosed").value || 0),
+        income: Number(document.getElementById("salesIncome").value || 0)
+      };
+
+      const { data: existing } = await client.from("sales_entries").select("id").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle();
+      let error;
+      if (existing) {
+        const result = await client.from("sales_entries").update(payload).eq("id", existing.id);
+        error = result.error;
+      } else {
+        const result = await client.from("sales_entries").insert(payload);
+        error = result.error;
+      }
+
+      if (error) return showError(error.message);
+      await loadSales();
+      await loadWeeklySales();
     }
+
     async function quickDials(amount) {
-        const current = Number(document.getElementById("salesDials").value || 0);
-        document.getElementById("salesDials").value = current + amount;
-        await saveSales()
+      const current = Number(document.getElementById("salesDials").value || 0);
+      document.getElementById("salesDials").value = current + amount;
+      await saveSales();
     }
+
     async function loadSales() {
-        const {data, error} = await client.from("sales_entries").select("*").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle();
-        if (error)
-            return showError(error.message);
-        const sales = data || {},
-            dials = sales.dials || 0,
-            contacts = sales.contacts || 0,
-            appointments = sales.appointments || 0,
-            presentations = sales.presentations || 0,
-            applications = sales.applications || 0,
-            closed = sales.closed_sales || 0,
-            income = Number(sales.income || 0);
-        document.getElementById("salesViewDials").textContent = dials;
-        document.getElementById("salesViewContacts").textContent = contacts;
-        document.getElementById("salesViewAppointments").textContent = appointments;
-        document.getElementById("salesViewPresentations").textContent = presentations;
-        document.getElementById("salesViewApplications").textContent = applications;
-        document.getElementById("salesViewClosed").textContent = closed;
-        document.getElementById("salesViewIncome").textContent = "$" + income.toLocaleString();
-        document.getElementById("dashDials").textContent = dials;
-        document.getElementById("dashContacts").textContent = contacts;
-        document.getElementById("dashIncome").textContent = "$" + income.toLocaleString();
-        document.getElementById("salesDials").value = dials || "";
-        document.getElementById("salesContacts").value = contacts || "";
-        document.getElementById("salesAppointments").value = appointments || "";
-        document.getElementById("salesPresentations").value = presentations || "";
-        document.getElementById("salesApplications").value = applications || "";
-        document.getElementById("salesClosed").value = closed || "";
-        document.getElementById("salesIncome").value = income || ""
+      const { data, error } = await client.from("sales_entries").select("*").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle();
+      if (error) return showError(error.message);
+
+      const sales = data || {};
+      const dials = sales.dials || 0;
+      const contacts = sales.contacts || 0;
+      const appointments = sales.appointments || 0;
+      const presentations = sales.presentations || 0;
+      const applications = sales.applications || 0;
+      const closed = sales.closed_sales || 0;
+      const income = Number(sales.income || 0);
+
+      document.getElementById("salesViewDials").textContent = dials;
+      document.getElementById("salesViewContacts").textContent = contacts;
+      document.getElementById("salesViewAppointments").textContent = appointments;
+      document.getElementById("salesViewPresentations").textContent = presentations;
+      document.getElementById("salesViewApplications").textContent = applications;
+      document.getElementById("salesViewClosed").textContent = closed;
+      document.getElementById("salesViewIncome").textContent = "$" + income.toLocaleString();
+
+      document.getElementById("dashDials").textContent = dials;
+      document.getElementById("dashContacts").textContent = contacts;
+      document.getElementById("dashIncome").textContent = "$" + income.toLocaleString();
+
+      document.getElementById("salesDials").value = dials || "";
+      document.getElementById("salesContacts").value = contacts || "";
+      document.getElementById("salesAppointments").value = appointments || "";
+      document.getElementById("salesPresentations").value = presentations || "";
+      document.getElementById("salesApplications").value = applications || "";
+      document.getElementById("salesClosed").value = closed || "";
+      document.getElementById("salesIncome").value = income || "";
     }
+
     async function loadWeeklySales() {
-        const {data, error} = await client.from("sales_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", startOfWeekISO()).order("entry_date", {
-            ascending: false
-        });
-        if (error)
-            return showError(error.message);
-        const rows = data || [],
-            totals = rows.reduce((acc, row) => {
-                acc.dials += row.dials || 0;
-                acc.contacts += row.contacts || 0;
-                acc.closed += row.closed_sales || 0;
-                acc.income += Number(row.income || 0);
-                return acc
-            }, {
-                dials: 0,
-                contacts: 0,
-                closed: 0,
-                income: 0
-            });
-        document.getElementById("weeklyDials").textContent = totals.dials;
-        document.getElementById("weeklyContacts").textContent = totals.contacts;
-        document.getElementById("weeklyClosed").textContent = totals.closed;
-        document.getElementById("weeklyIncome").textContent = "$" + totals.income.toLocaleString();
-        document.getElementById("homeWeeklyIncome").textContent = "$" + totals.income.toLocaleString();
-        const goal = Number(settings.weekly_income_goal || 2000),
-            percent = Math.min(100, Math.round(totals.income / goal * 100));
-        document.getElementById("weeklyIncomeProgress").style.width = percent + "%";
-        document.getElementById("weeklyIncomeText").textContent = "$" + totals.income.toLocaleString() + " of $" + goal.toLocaleString() + " weekly target";
-        const salesHistory = document.getElementById("salesHistory");
-        if (!rows.length) {
-            salesHistory.innerHTML = '<p class="muted">No sales history this week yet.</p>';
-            return
-        }
-        salesHistory.innerHTML = rows.map(row => `<div class="history-day"><strong>${row.entry_date}</strong><p class="muted">Dials: ${row.dials || 0}</p><p class="muted">Contacts: ${row.contacts || 0}</p><p class="muted">Sales: ${row.closed_sales || 0}</p><p class="muted">Income: $${Number(row.income || 0).toLocaleString()}</p></div>`).join("")
+      const { data, error } = await client.from("sales_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", startOfWeekISO()).order("entry_date", { ascending: false });
+      if (error) return showError(error.message);
+
+      const rows = data || [];
+      const totals = rows.reduce((acc, row) => {
+        acc.dials += row.dials || 0;
+        acc.contacts += row.contacts || 0;
+        acc.closed += row.closed_sales || 0;
+        acc.income += Number(row.income || 0);
+        return acc;
+      }, { dials: 0, contacts: 0, closed: 0, income: 0 });
+
+      document.getElementById("weeklyDials").textContent = totals.dials;
+      document.getElementById("weeklyContacts").textContent = totals.contacts;
+      document.getElementById("weeklyClosed").textContent = totals.closed;
+      document.getElementById("weeklyIncome").textContent = "$" + totals.income.toLocaleString();
+      document.getElementById("homeWeeklyIncome").textContent = "$" + totals.income.toLocaleString();
+
+      const goal = Number(settings.weekly_income_goal || 2000);
+      const percent = Math.min(100, Math.round((totals.income / goal) * 100));
+      document.getElementById("weeklyIncomeProgress").style.width = percent + "%";
+      document.getElementById("weeklyIncomeText").textContent = "$" + totals.income.toLocaleString() + " of $" + goal.toLocaleString() + " weekly target";
+
+      const salesHistory = document.getElementById("salesHistory");
+      if (!rows.length) {
+        salesHistory.innerHTML = '<p class="muted">No sales history this week yet.</p>';
+        return;
+      }
+
+      salesHistory.innerHTML = rows.map(row => `
+        <div class="history-day">
+          <strong>${row.entry_date}</strong>
+          <p class="muted">Dials: ${row.dials || 0}</p>
+          <p class="muted">Contacts: ${row.contacts || 0}</p>
+          <p class="muted">Sales: ${row.closed_sales || 0}</p>
+          <p class="muted">Income: $${Number(row.income || 0).toLocaleString()}</p>
+        </div>
+      `).join("");
     }
+
     async function saveHealth() {
-        const payload = {
-            user_id: currentUser.id,
-            entry_date: todayISO(),
-            weight: Number(document.getElementById("healthWeight").value || 0),
-            water_oz: Number(document.getElementById("healthWater").value || 0),
-            steps: Number(document.getElementById("healthSteps").value || 0),
-            sleep_hours: Number(document.getElementById("healthSleep").value || 0),
-            workout: document.getElementById("healthWorkout").value.trim()
-        };
-        const {data: existing} = await client.from("health_entries").select("id").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle();
-        let error;
-        if (existing) {
-            const result = await client.from("health_entries").update(payload).eq("id", existing.id);
-            error = result.error
-        } else {
-            const result = await client.from("health_entries").insert(payload);
-            error = result.error
-        }
-        if (error)
-            return showError(error.message);
-        await loadHealth()
+      const payload = {
+        user_id: currentUser.id,
+        entry_date: todayISO(),
+        weight: Number(document.getElementById("healthWeight").value || 0),
+        water_oz: Number(document.getElementById("healthWater").value || 0),
+        steps: Number(document.getElementById("healthSteps").value || 0),
+        sleep_hours: Number(document.getElementById("healthSleep").value || 0),
+        workout: document.getElementById("healthWorkout").value.trim()
+      };
+
+      const { data: existing } = await client.from("health_entries").select("id").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle();
+      let error;
+      if (existing) {
+        const result = await client.from("health_entries").update(payload).eq("id", existing.id);
+        error = result.error;
+      } else {
+        const result = await client.from("health_entries").insert(payload);
+        error = result.error;
+      }
+
+      if (error) return showError(error.message);
+      await loadHealth();
     }
+
     async function quickWater(amount) {
-        const current = Number(document.getElementById("healthWater").value || 0);
-        document.getElementById("healthWater").value = current + amount;
-        await saveHealth()
+      const current = Number(document.getElementById("healthWater").value || 0);
+      document.getElementById("healthWater").value = current + amount;
+      await saveHealth();
     }
+
     async function markWorkoutDone() {
-        document.getElementById("healthWorkout").value = document.getElementById("healthWorkout").value || "Workout done";
-        await saveHealth();
-        await setStatus("Gym")
+      document.getElementById("healthWorkout").value = document.getElementById("healthWorkout").value || "Workout done";
+      await saveHealth();
+      await setStatus("Gym");
     }
+
     async function loadHealth() {
-        const {data, error} = await client.from("health_entries").select("*").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle();
-        if (error)
-            return showError(error.message);
-        const h = data || {};
-        document.getElementById("healthViewWeight").textContent = h.weight ? h.weight + " lb" : "Not logged";
-        document.getElementById("healthViewWater").textContent = (h.water_oz || 0) + " oz";
-        document.getElementById("healthViewSteps").textContent = h.steps || 0;
-        document.getElementById("healthViewSleep").textContent = (h.sleep_hours || 0) + "h";
-        document.getElementById("healthViewWorkout").textContent = h.workout || "Not logged";
-        document.getElementById("homeWater").textContent = (h.water_oz || 0) + " oz";
-        document.getElementById("homeSteps").textContent = h.steps || 0;
-        document.getElementById("homeWorkout").textContent = h.workout || "Not logged";
-        document.getElementById("healthWeight").value = h.weight || "";
-        document.getElementById("healthWater").value = h.water_oz || "";
-        document.getElementById("healthSteps").value = h.steps || "";
-        document.getElementById("healthSleep").value = h.sleep_hours || "";
-        document.getElementById("healthWorkout").value = h.workout || "";
-        const water = Number(h.water_oz || 0),
-            goal = Number(settings.water_goal_oz || 80),
-            waterPercent = Math.min(100, Math.round(water / goal * 100));
-        document.getElementById("waterProgress").style.width = waterPercent + "%";
-        document.getElementById("waterProgressText").textContent = water + " of " + goal + " oz water goal"
+      const { data, error } = await client.from("health_entries").select("*").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle();
+      if (error) return showError(error.message);
+
+      const h = data || {};
+      document.getElementById("healthViewWeight").textContent = h.weight ? h.weight + " lb" : "Not logged";
+      document.getElementById("healthViewWater").textContent = (h.water_oz || 0) + " oz";
+      document.getElementById("healthViewSteps").textContent = h.steps || 0;
+      document.getElementById("healthViewSleep").textContent = (h.sleep_hours || 0) + "h";
+      document.getElementById("healthViewWorkout").textContent = h.workout || "Not logged";
+
+      document.getElementById("homeWater").textContent = (h.water_oz || 0) + " oz";
+      document.getElementById("homeSteps").textContent = h.steps || 0;
+      document.getElementById("homeWorkout").textContent = h.workout || "Not logged";
+
+      document.getElementById("healthWeight").value = h.weight || "";
+      document.getElementById("healthWater").value = h.water_oz || "";
+      document.getElementById("healthSteps").value = h.steps || "";
+      document.getElementById("healthSleep").value = h.sleep_hours || "";
+      document.getElementById("healthWorkout").value = h.workout || "";
+
+      const water = Number(h.water_oz || 0);
+      const goal = Number(settings.water_goal_oz || 80);
+      const waterPercent = Math.min(100, Math.round((water / goal) * 100));
+      document.getElementById("waterProgress").style.width = waterPercent + "%";
+      document.getElementById("waterProgressText").textContent = water + " of " + goal + " oz water goal";
     }
+
     async function addMoneyGoal() {
-        const goal_name = document.getElementById("moneyName").value.trim(),
-            target_amount = Number(document.getElementById("moneyTarget").value || 0),
-            current_amount = Number(document.getElementById("moneyCurrent").value || 0);
-        if (!goal_name)
-            return;
-        const {error} = await client.from("money_goals").insert({
-            user_id: currentUser.id,
-            goal_name,
-            target_amount,
-            current_amount
-        });
-        if (error)
-            return showError(error.message);
-        document.getElementById("moneyName").value = "";
-        document.getElementById("moneyTarget").value = "";
-        document.getElementById("moneyCurrent").value = "";
-        await loadMoneyGoals()
+      const goal_name = document.getElementById("moneyName").value.trim();
+      const target_amount = Number(document.getElementById("moneyTarget").value || 0);
+      const current_amount = Number(document.getElementById("moneyCurrent").value || 0);
+      if (!goal_name) return;
+
+      const { error } = await client.from("money_goals").insert({ user_id: currentUser.id, goal_name, target_amount, current_amount });
+      if (error) return showError(error.message);
+
+      document.getElementById("moneyName").value = "";
+      document.getElementById("moneyTarget").value = "";
+      document.getElementById("moneyCurrent").value = "";
+      await loadMoneyGoals();
     }
+
     async function loadMoneyGoals() {
-        const {data, error} = await client.from("money_goals").select("*").eq("user_id", currentUser.id).order("created_at", {
-            ascending: false
-        });
-        if (error)
-            return showError(error.message);
-        const moneyList = document.getElementById("moneyList");
-        if (!data.length) {
-            moneyList.innerHTML = '<p class="muted">No money goals yet.</p>';
-            return
-        }
-        moneyList.innerHTML = data.map(goal => {
-            const target = Number(goal.target_amount || 0),
-                current = Number(goal.current_amount || 0),
-                percent = target > 0 ? Math.min(100, Math.round(current / target * 100)) : 0;
-            return `<div class="list-item"><span>${escapeHtml(goal.goal_name)}</span><strong>$${current.toLocaleString()} / $${target.toLocaleString()}</strong><div style="clear:both"></div><div class="progress"><span style="width:${percent}%;"></span></div><p class="muted">${percent}% complete</p><button class="mini-btn secondary" onclick="deleteRow('money_goals', '${goal.id}', loadMoneyGoals)">Delete</button></div>`
-        }).join("")
+      const { data, error } = await client.from("money_goals").select("*").eq("user_id", currentUser.id).order("created_at", { ascending: false });
+      if (error) return showError(error.message);
+      const moneyList = document.getElementById("moneyList");
+
+      if (!data.length) {
+        moneyList.innerHTML = '<p class="muted">No money goals yet.</p>';
+        return;
+      }
+
+      moneyList.innerHTML = data.map(goal => {
+        const target = Number(goal.target_amount || 0);
+        const current = Number(goal.current_amount || 0);
+        const percent = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+        return `
+          <div class="list-item">
+            <span>${escapeHtml(goal.goal_name)}</span>
+            <strong>$${current.toLocaleString()} / $${target.toLocaleString()}</strong>
+            <div style="clear:both;"></div>
+            <div class="progress"><span style="width:${percent}%;"></span></div>
+            <p class="muted">${percent}% complete</p>
+            <div class="actions">
+              <button class="mini-btn secondary" onclick="addMoneyAmount('${goal.id}', ${current}, 50)">+$50</button>
+              <button class="mini-btn secondary" onclick="addMoneyAmount('${goal.id}', ${current}, 100)">+$100</button>
+              <button class="mini-btn secondary" onclick="addMoneyAmount('${goal.id}', ${current}, 500)">+$500</button>
+              <button class="mini-btn secondary" onclick="editMoneyGoal('${goal.id}', '${escapeJs(goal.goal_name)}', ${target}, ${current})">Edit</button>
+              <button class="mini-btn secondary" onclick="deleteRow('money_goals', '${goal.id}', loadMoneyGoals)">Delete</button>
+            </div>
+          </div>
+        `;
+      }).join("");
     }
+
+    async function addMoneyAmount(id, current, amount) {
+      const { error } = await client.from("money_goals").update({ current_amount: current + amount, updated_at: new Date().toISOString() }).eq("id", id).eq("user_id", currentUser.id);
+      if (error) return showError(error.message);
+      await loadMoneyGoals();
+    }
+
+    async function editMoneyGoal(id, oldName, oldTarget, oldCurrent) {
+      const goal_name = prompt("Goal name", oldName);
+      if (goal_name === null || !goal_name.trim()) return;
+      const target_amount = prompt("Target amount", oldTarget);
+      if (target_amount === null) return;
+      const current_amount = prompt("Current amount", oldCurrent);
+      if (current_amount === null) return;
+
+      const { error } = await client.from("money_goals").update({
+        goal_name: goal_name.trim(),
+        target_amount: Number(target_amount || 0),
+        current_amount: Number(current_amount || 0),
+        updated_at: new Date().toISOString()
+      }).eq("id", id).eq("user_id", currentUser.id);
+
+      if (error) return showError(error.message);
+      await loadMoneyGoals();
+    }
+
     async function addCrm() {
-        const name = document.getElementById("crmName").value.trim(),
-            category = document.getElementById("crmCategory").value.trim(),
-            last_contact = document.getElementById("crmLast").value || null,
-            next_follow_up = document.getElementById("crmNext").value || null,
-            notes = document.getElementById("crmNotes").value.trim();
-        if (!name)
-            return;
-        const {error} = await client.from("crm_contacts").insert({
-            user_id: currentUser.id,
-            name,
-            category,
-            last_contact,
-            next_follow_up,
-            notes
-        });
-        if (error)
-            return showError(error.message);
-        document.getElementById("crmName").value = "";
-        document.getElementById("crmCategory").value = "";
-        document.getElementById("crmLast").value = "";
-        document.getElementById("crmNext").value = "";
-        document.getElementById("crmNotes").value = "";
-        await loadCrm()
+      const name = document.getElementById("crmName").value.trim();
+      const category = document.getElementById("crmCategory").value.trim();
+      const last_contact = document.getElementById("crmLast").value || null;
+      const next_follow_up = document.getElementById("crmNext").value || null;
+      const notes = document.getElementById("crmNotes").value.trim();
+      if (!name) return;
+
+      const { error } = await client.from("crm_contacts").insert({ user_id: currentUser.id, name, category, last_contact, next_follow_up, notes });
+      if (error) return showError(error.message);
+
+      document.getElementById("crmName").value = "";
+      document.getElementById("crmCategory").value = "";
+      document.getElementById("crmLast").value = "";
+      document.getElementById("crmNext").value = "";
+      document.getElementById("crmNotes").value = "";
+      await loadCrm();
     }
+
     async function loadCrm() {
-        const {data, error} = await client.from("crm_contacts").select("*").eq("user_id", currentUser.id).order("created_at", {
-            ascending: false
-        });
-        if (error)
-            return showError(error.message);
-        const crmList = document.getElementById("crmList");
-        if (!data.length) {
-            crmList.innerHTML = '<p class="muted">No contacts yet.</p>';
-            return
-        }
-        crmList.innerHTML = data.map(contact => `<div class="list-item"><strong style="float:none;">${escapeHtml(contact.name)}</strong><p class="muted">${escapeHtml(contact.category || "No category")}</p><p class="muted">Last: ${contact.last_contact || "None"} | Next: ${contact.next_follow_up || "None"}</p><p class="muted">${escapeHtml(contact.notes || "")}</p><button class="mini-btn secondary" onclick="deleteRow('crm_contacts', '${contact.id}', loadCrm)">Delete</button></div>`).join("")
+      const { data, error } = await client.from("crm_contacts").select("*").eq("user_id", currentUser.id).order("created_at", { ascending: false });
+      if (error) return showError(error.message);
+      const crmList = document.getElementById("crmList");
+
+      if (!data.length) {
+        crmList.innerHTML = '<p class="muted">No contacts yet.</p>';
+        return;
+      }
+
+      crmList.innerHTML = data.map(contact => `
+        <div class="list-item">
+          <strong style="float:none;">${escapeHtml(contact.name)}</strong>
+          <p class="muted">${escapeHtml(contact.category || "No category")}</p>
+          <p class="muted">Last: ${contact.last_contact || "None"} | Next: ${contact.next_follow_up || "None"}</p>
+          <p class="muted">${escapeHtml(contact.notes || "")}</p>
+          <div class="actions">
+            <button class="mini-btn secondary" onclick="markFollowedUp('${contact.id}')">Followed up</button>
+            <button class="mini-btn secondary" onclick="editCrm('${contact.id}', '${escapeJs(contact.name)}', '${escapeJs(contact.category || "")}', '${contact.last_contact || ""}', '${contact.next_follow_up || ""}', '${escapeJs(contact.notes || "")}')">Edit</button>
+            <button class="mini-btn secondary" onclick="deleteRow('crm_contacts', '${contact.id}', loadCrm)">Delete</button>
+          </div>
+        </div>
+      `).join("");
     }
+
+    async function markFollowedUp(id) {
+      const { error } = await client.from("crm_contacts").update({
+        last_contact: todayISO(),
+        next_follow_up: null,
+        updated_at: new Date().toISOString()
+      }).eq("id", id).eq("user_id", currentUser.id);
+      if (error) return showError(error.message);
+      await loadCrm();
+    }
+
+    async function editCrm(id, oldName, oldCategory, oldLast, oldNext, oldNotes) {
+      const name = prompt("Name", oldName);
+      if (name === null || !name.trim()) return;
+      const category = prompt("Category", oldCategory);
+      if (category === null) return;
+      const last_contact = prompt("Last contact date, YYYY-MM-DD", oldLast);
+      if (last_contact === null) return;
+      const next_follow_up = prompt("Next follow-up date, YYYY-MM-DD", oldNext);
+      if (next_follow_up === null) return;
+      const notes = prompt("Notes", oldNotes);
+      if (notes === null) return;
+
+      const { error } = await client.from("crm_contacts").update({
+        name: name.trim(),
+        category,
+        last_contact: last_contact || null,
+        next_follow_up: next_follow_up || null,
+        notes,
+        updated_at: new Date().toISOString()
+      }).eq("id", id).eq("user_id", currentUser.id);
+
+      if (error) return showError(error.message);
+      await loadCrm();
+    }
+
     async function deleteRow(table, id, callback) {
-        const {error} = await client.from(table).delete().eq("id", id).eq("user_id", currentUser.id);
-        if (error)
-            return showError(error.message);
-        await callback()
+      const { error } = await client.from(table).delete().eq("id", id).eq("user_id", currentUser.id);
+      if (error) return showError(error.message);
+      await callback();
     }
+
     function startRealtime() {
-        const tables = ["tasks", "notes", "sales_entries", "health_entries", "money_goals", "crm_contacts", "daily_status", "user_settings"];
-        tables.forEach(table => {
-            client.channel(table + "-channel").on("postgres_changes", {
-                event: "*",
-                schema: "public",
-                table
-            }, () => loadAll()).subscribe()
-        })
+      const tables = ["tasks", "notes", "sales_entries", "health_entries", "money_goals", "crm_contacts", "daily_status", "user_settings"];
+      tables.forEach(table => {
+        client.channel(table + "-channel").on("postgres_changes", { event: "*", schema: "public", table }, () => loadAll()).subscribe();
+      });
     }
+
     function showError(message) {
-        syncStatus.textContent = message
+      syncStatus.textContent = message;
     }
+
     function escapeHtml(text) {
-        const div = document.createElement("div");
-        div.textContent = text || "";
-        return div.innerHTML
+      const div = document.createElement("div");
+      div.textContent = text || "";
+      return div.innerHTML;
     }
+
+    function escapeJs(text) {
+      return String(text || "")
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/\n/g, "\\n")
+        .replace(/\r/g, "");
+    }
+
     checkSession();
-    </script>
+  </script>
 </body>
 </html>
