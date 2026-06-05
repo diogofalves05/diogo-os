@@ -384,6 +384,37 @@
       margin-bottom: 4px;
     }
 
+    .crm-dashboard {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .crm-column {
+      padding: 14px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+    }
+
+    .crm-column h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      letter-spacing: -0.03em;
+    }
+
+    .tag {
+      display: inline-flex;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(245, 245, 247, 0.8);
+      font-size: 12px;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+
     .tab-page { display: none; }
     .tab-page.active { display: block; }
     .hidden { display: none; }
@@ -402,6 +433,7 @@
       .form-grid { grid-template-columns: 1fr; }
       .status-grid { grid-template-columns: repeat(2, 1fr); }
       .history-grid { grid-template-columns: 1fr; }
+      .crm-dashboard { grid-template-columns: 1fr; }
 
       .tabs {
         position: fixed;
@@ -639,9 +671,33 @@
       <section id="tab-crm" class="tab-page">
         <div class="grid">
           <div class="card full">
+            <h2>CRM Follow-ups</h2>
+            <div class="crm-dashboard">
+              <div class="crm-column">
+                <h3>Overdue</h3>
+                <div id="crmOverdue"><p class="muted">None</p></div>
+              </div>
+              <div class="crm-column">
+                <h3>Due Today</h3>
+                <div id="crmToday"><p class="muted">None</p></div>
+              </div>
+              <div class="crm-column">
+                <h3>Upcoming</h3>
+                <div id="crmUpcoming"><p class="muted">None</p></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card full">
             <h2>CRM</h2>
             <input id="crmName" class="input" placeholder="Name" />
             <input id="crmCategory" class="input" placeholder="Category, example Prospect or Mentor" />
+            <select id="crmStatus" class="input">
+              <option value="">Status</option>
+              <option value="Hot">Hot</option>
+              <option value="Warm">Warm</option>
+              <option value="Cold">Cold</option>
+            </select>
             <div class="form-grid">
               <input id="crmLast" class="input" type="date" />
               <input id="crmNext" class="input" type="date" />
@@ -683,7 +739,7 @@
       </section>
 
       <div class="footer">
-        Diogo OS v6, edit tools added.
+        Diogo OS v7, CRM follow-ups added.
       </div>
     </section>
   </main>
@@ -1281,16 +1337,18 @@
     async function addCrm() {
       const name = document.getElementById("crmName").value.trim();
       const category = document.getElementById("crmCategory").value.trim();
+      const status = document.getElementById("crmStatus").value;
       const last_contact = document.getElementById("crmLast").value || null;
       const next_follow_up = document.getElementById("crmNext").value || null;
       const notes = document.getElementById("crmNotes").value.trim();
       if (!name) return;
 
-      const { error } = await client.from("crm_contacts").insert({ user_id: currentUser.id, name, category, last_contact, next_follow_up, notes });
+      const { error } = await client.from("crm_contacts").insert({ user_id: currentUser.id, name, category, status, last_contact, next_follow_up, notes });
       if (error) return showError(error.message);
 
       document.getElementById("crmName").value = "";
       document.getElementById("crmCategory").value = "";
+      document.getElementById("crmStatus").value = "";
       document.getElementById("crmLast").value = "";
       document.getElementById("crmNext").value = "";
       document.getElementById("crmNotes").value = "";
@@ -1298,45 +1356,93 @@
     }
 
     async function loadCrm() {
-      const { data, error } = await client.from("crm_contacts").select("*").eq("user_id", currentUser.id).order("created_at", { ascending: false });
+      const { data, error } = await client.from("crm_contacts").select("*").eq("user_id", currentUser.id).order("next_follow_up", { ascending: true, nullsFirst: false });
       if (error) return showError(error.message);
+      const contacts = data || [];
       const crmList = document.getElementById("crmList");
 
-      if (!data.length) {
+      renderCrmFollowups(contacts);
+
+      if (!contacts.length) {
         crmList.innerHTML = '<p class="muted">No contacts yet.</p>';
         return;
       }
 
-      crmList.innerHTML = data.map(contact => `
+      crmList.innerHTML = contacts.map(contact => `
         <div class="list-item">
           <strong style="float:none;">${escapeHtml(contact.name)}</strong>
-          <p class="muted">${escapeHtml(contact.category || "No category")}</p>
+          <div style="margin-top:8px;">
+            <span class="tag">${escapeHtml(contact.status || "No status")}</span>
+            <span class="tag">${escapeHtml(contact.category || "No category")}</span>
+          </div>
           <p class="muted">Last: ${contact.last_contact || "None"} | Next: ${contact.next_follow_up || "None"}</p>
           <p class="muted">${escapeHtml(contact.notes || "")}</p>
           <div class="actions">
             <button class="mini-btn secondary" onclick="markFollowedUp('${contact.id}')">Followed up</button>
-            <button class="mini-btn secondary" onclick="editCrm('${contact.id}', '${escapeJs(contact.name)}', '${escapeJs(contact.category || "")}', '${contact.last_contact || ""}', '${contact.next_follow_up || ""}', '${escapeJs(contact.notes || "")}')">Edit</button>
+            <button class="mini-btn secondary" onclick="setNextFollowUp('${contact.id}', 1)">+1 day</button>
+            <button class="mini-btn secondary" onclick="setNextFollowUp('${contact.id}', 3)">+3 days</button>
+            <button class="mini-btn secondary" onclick="setNextFollowUp('${contact.id}', 7)">+7 days</button>
+            <button class="mini-btn secondary" onclick="editCrm('${contact.id}', '${escapeJs(contact.name)}', '${escapeJs(contact.category || "")}', '${escapeJs(contact.status || "")}', '${contact.last_contact || ""}', '${contact.next_follow_up || ""}', '${escapeJs(contact.notes || "")}')">Edit</button>
             <button class="mini-btn secondary" onclick="deleteRow('crm_contacts', '${contact.id}', loadCrm)">Delete</button>
           </div>
         </div>
       `).join("");
     }
 
+    function renderCrmFollowups(contacts) {
+      const today = todayISO();
+      const overdue = contacts.filter(c => c.next_follow_up && c.next_follow_up < today);
+      const dueToday = contacts.filter(c => c.next_follow_up === today);
+      const upcoming = contacts.filter(c => c.next_follow_up && c.next_follow_up > today).slice(0, 6);
+
+      document.getElementById("crmOverdue").innerHTML = renderMiniContacts(overdue);
+      document.getElementById("crmToday").innerHTML = renderMiniContacts(dueToday);
+      document.getElementById("crmUpcoming").innerHTML = renderMiniContacts(upcoming);
+    }
+
+    function renderMiniContacts(items) {
+      if (!items.length) return '<p class="muted">None</p>';
+      return items.map(item => `
+        <div class="list-item" style="margin-bottom:8px;">
+          <strong style="float:none;">${escapeHtml(item.name)}</strong>
+          <p class="muted">${escapeHtml(item.status || "No status")} | ${item.next_follow_up}</p>
+        </div>
+      `).join("");
+    }
+
     async function markFollowedUp(id) {
+      const nextDate = getFutureDate(3);
       const { error } = await client.from("crm_contacts").update({
         last_contact: todayISO(),
-        next_follow_up: null,
+        next_follow_up: nextDate,
         updated_at: new Date().toISOString()
       }).eq("id", id).eq("user_id", currentUser.id);
       if (error) return showError(error.message);
       await loadCrm();
     }
 
-    async function editCrm(id, oldName, oldCategory, oldLast, oldNext, oldNotes) {
+    async function setNextFollowUp(id, days) {
+      const { error } = await client.from("crm_contacts").update({
+        next_follow_up: getFutureDate(days),
+        updated_at: new Date().toISOString()
+      }).eq("id", id).eq("user_id", currentUser.id);
+      if (error) return showError(error.message);
+      await loadCrm();
+    }
+
+    function getFutureDate(days) {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      return date.toISOString().slice(0, 10);
+    }
+
+    async function editCrm(id, oldName, oldCategory, oldStatus, oldLast, oldNext, oldNotes) {
       const name = prompt("Name", oldName);
       if (name === null || !name.trim()) return;
       const category = prompt("Category", oldCategory);
       if (category === null) return;
+      const status = prompt("Status, Hot, Warm, or Cold", oldStatus);
+      if (status === null) return;
       const last_contact = prompt("Last contact date, YYYY-MM-DD", oldLast);
       if (last_contact === null) return;
       const next_follow_up = prompt("Next follow-up date, YYYY-MM-DD", oldNext);
@@ -1347,6 +1453,7 @@
       const { error } = await client.from("crm_contacts").update({
         name: name.trim(),
         category,
+        status,
         last_contact: last_contact || null,
         next_follow_up: next_follow_up || null,
         notes,
