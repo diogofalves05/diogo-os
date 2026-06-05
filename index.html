@@ -576,7 +576,6 @@
                             <button style="width:auto" onclick="addTask()">Add</button>
                         </div>
                         <div id="taskList" style="margin-top:14px"></div>
-                        <button class="secondary" onclick="clearCompletedTasks()" style="margin-top:12px;">Clear completed</button>
                     </div>
                     <div class="card half">
                         <h2>Today Snapshot</h2>
@@ -772,34 +771,550 @@
                     </div>
                 </div>
             </section>
-            <div class="footer">Diogo OS v6, edit tools added.</div>
+            <div class="footer">Diogo OS v5, tabs and settings added.</div>
         </section>
     </main>
     <script>
-        const SUPABASE_URL="https://gztozbdnyphpofccvwvc.supabase.co";
-        const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6dG96YmRueXBocG9mY2N2d3ZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MjUyNzksImV4cCI6MjA5NjEwMTI3OX0.V1XbII8XqS7vuIYcoxf0aL0mAlluatj_xdNQTOHih_A";
-        const client=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-        const authView=document.getElementById("authView"),dashboardView=document.getElementById("dashboardView"),authMessage=document.getElementById("authMessage"),userEmail=document.getElementById("userEmail"),syncStatus=document.getElementById("syncStatus");
-        let currentUser=null,dailyStatusId=null,settingsId=null,currentStatus="Online",dayComplete=false,settings={display_name:"Diogo",weekly_income_goal:2000,daily_dial_goal:100,water_goal_oz:80,step_goal:10000};
-        document.getElementById("todayText").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});document.getElementById("deviceText").textContent=/iPhone|iPad|iPod/i.test(navigator.userAgent)?"iPhone":"Mac or Web";
-        function openTab(name,btn){document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active"));document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));document.getElementById("tab-"+name).classList.add("active");btn.classList.add("active");window.scrollTo({top:0,behavior:"smooth"})}
-        function todayISO(){return new Date().toISOString().slice(0,10)}function startOfWeekISO(){const now=new Date(),day=now.getDay(),diff=now.getDate()-day+(day===0?-6:1),monday=new Date(now.setDate(diff));monday.setHours(0,0,0,0);return monday.toISOString().slice(0,10)}
-        async function checkSession(){const{data}=await client.auth.getSession();if(data.session){currentUser=data.session.user;showDashboard()}else showAuth()}function showAuth(){authView.classList.remove("hidden");dashboardView.classList.add("hidden")}async function showDashboard(){authView.classList.add("hidden");dashboardView.classList.remove("hidden");userEmail.textContent=currentUser.email;await loadAll();startRealtime()}
-        async function signUp(){const email=document.getElementById("emailInput").value.trim(),password=document.getElementById("passwordInput").value.trim();authMessage.textContent="Creating account...";const{error}=await client.auth.signUp({email,password});authMessage.textContent=error?error.message:"Account created. Check your email if needed."}async function signIn(){const email=document.getElementById("emailInput").value.trim(),password=document.getElementById("passwordInput").value.trim();authMessage.textContent="Logging in...";const{data,error}=await client.auth.signInWithPassword({email,password});if(error){authMessage.textContent=error.message;return}currentUser=data.user;showDashboard()}async function signOut(){await client.auth.signOut();currentUser=null;showAuth()}
-        async function loadAll(){if(!currentUser)return;syncStatus.textContent="Loading";await loadSettings();await Promise.all([loadTasks(),loadNotes(),loadSales(),loadHealth(),loadMoneyGoals(),loadCrm(),loadDailyStatus(),loadWeeklySales()]);syncStatus.textContent="Synced"}
-        async function loadSettings(){const{data,error}=await client.from("user_settings").select("*").eq("user_id",currentUser.id).maybeSingle();if(error)return showError(error.message);if(!data){const{data:created,error:insertError}=await client.from("user_settings").insert({user_id:currentUser.id,display_name:"Diogo",weekly_income_goal:2000,daily_dial_goal:100,water_goal_oz:80,step_goal:10000,theme:"black glass"}).select().single();if(insertError)return showError(insertError.message);settingsId=created.id;settings=created}else{settingsId=data.id;settings={...settings,...data}}document.getElementById("settingName").value=settings.display_name||"Diogo";document.getElementById("settingIncomeGoal").value=settings.weekly_income_goal||2000;document.getElementById("settingDialGoal").value=settings.daily_dial_goal||100;document.getElementById("settingWaterGoal").value=settings.water_goal_oz||80;document.getElementById("settingStepGoal").value=settings.step_goal||10000}
-        async function saveSettings(){const payload={user_id:currentUser.id,display_name:document.getElementById("settingName").value.trim()||"Diogo",weekly_income_goal:Number(document.getElementById("settingIncomeGoal").value||2000),daily_dial_goal:Number(document.getElementById("settingDialGoal").value||100),water_goal_oz:Number(document.getElementById("settingWaterGoal").value||80),step_goal:Number(document.getElementById("settingStepGoal").value||10000),theme:"black glass",updated_at:new Date().toISOString()};const{error}=await client.from("user_settings").update(payload).eq("id",settingsId);if(error)return showError(error.message);settings={...settings,...payload};await loadAll()}
-        async function loadDailyStatus(){const{data,error}=await client.from("daily_status").select("*").eq("user_id",currentUser.id).eq("entry_date",todayISO()).maybeSingle();if(error)return showError(error.message);if(!data){dailyStatusId=null;currentStatus="Online";dayComplete=false;updateStatusUI();return}dailyStatusId=data.id;currentStatus=data.status||"Online";dayComplete=!!data.day_complete;document.getElementById("focusInput").value=data.focus||"";document.getElementById("focusView").textContent=data.focus||"Win the day. Track the reps.";updateStatusUI()}function updateStatusUI(){document.getElementById("statusPill").textContent="● "+currentStatus;document.getElementById("dayCompleteBtn").textContent=dayComplete?"Day complete":"Mark day complete";document.querySelectorAll(".status-btn").forEach(btn=>btn.classList.toggle("active",btn.textContent.trim()===currentStatus||btn.textContent.trim()==="Calls"&&currentStatus==="On calls"))}async function saveDailyStatus(){const focus=document.getElementById("focusInput").value.trim(),payload={user_id:currentUser.id,entry_date:todayISO(),status:currentStatus,focus,day_complete:dayComplete,updated_at:new Date().toISOString()};let error;if(dailyStatusId){const result=await client.from("daily_status").update(payload).eq("id",dailyStatusId);error=result.error}else{const result=await client.from("daily_status").insert(payload).select().single();error=result.error;if(result.data)dailyStatusId=result.data.id}if(error)return showError(error.message);document.getElementById("focusView").textContent=focus||"Win the day. Track the reps.";await loadDailyStatus()}async function setStatus(status){currentStatus=status;updateStatusUI();await saveDailyStatus()}async function toggleDayComplete(){dayComplete=!dayComplete;updateStatusUI();await saveDailyStatus()}
-        async function loadTasks(){const{data,error}=await client.from("tasks").select("*").eq("user_id",currentUser.id).order("created_at",{ascending:false});if(error)return showError(error.message);renderTasks(data||[])}function renderTasks(tasks){document.getElementById("taskCount").textContent=tasks.length;const taskList=document.getElementById("taskList");if(!tasks.length){taskList.innerHTML='<p class="muted">No tasks yet. Add your first one.</p>';return}taskList.innerHTML=tasks.map(task=>`<div class="row"><div class="left"><input type="checkbox" ${task.completed?"checked":""} onchange="toggleTask('${task.id}', ${!task.completed})"/><span class="title ${task.completed?"done":""}">${escapeHtml(task.title)}</span></div><div class="actions"><button class="mini-btn secondary" onclick="editTask('${task.id}', '${escapeForPrompt(task.title)}')">Edit</button><button class="mini-btn secondary" onclick="deleteTask('${task.id}')">Delete</button></div></div>`).join("")}async function addTask(){const input=document.getElementById("taskInput"),title=input.value.trim();if(!title)return;const{error}=await client.from("tasks").insert({title,user_id:currentUser.id});if(error)return showError(error.message);input.value="";await loadTasks()}async function editTask(id,currentTitle){const title=prompt("Edit task",currentTitle||"");if(title===null)return;if(!title.trim())return;const{error}=await client.from("tasks").update({title:title.trim(),updated_at:new Date().toISOString()}).eq("id",id).eq("user_id",currentUser.id);if(error)return showError(error.message);await loadTasks()}async function clearCompletedTasks(){const{error}=await client.from("tasks").delete().eq("user_id",currentUser.id).eq("completed",true);if(error)return showError(error.message);await loadTasks()}async function toggleTask(id,completed){const{error}=await client.from("tasks").update({completed,updated_at:new Date().toISOString()}).eq("id",id).eq("user_id",currentUser.id);if(error)return showError(error.message);await loadTasks()}async function deleteTask(id){const{error}=await client.from("tasks").delete().eq("id",id).eq("user_id",currentUser.id);if(error)return showError(error.message);await loadTasks()}
-        async function addNote(){const title=document.getElementById("noteTitle").value.trim(),content=document.getElementById("noteContent").value.trim();if(!title)return;const{error}=await client.from("notes").insert({user_id:currentUser.id,title,content});if(error)return showError(error.message);document.getElementById("noteTitle").value="";document.getElementById("noteContent").value="";await loadNotes()}async function loadNotes(){const{data,error}=await client.from("notes").select("*").eq("user_id",currentUser.id).order("created_at",{ascending:false});if(error)return showError(error.message);const notesList=document.getElementById("notesList");if(!data.length){notesList.innerHTML='<p class="muted">No notes yet.</p>';return}notesList.innerHTML=data.map(note=>`<div class="list-item"><strong style="float:none;">${escapeHtml(note.title)}</strong><p class="muted">${escapeHtml(note.content||"")}</p><div class="actions"><button class="mini-btn secondary" onclick="editNote('${note.id}', '${escapeForPrompt(note.title)}', '${escapeForPrompt(note.content||"")}')">Edit</button><button class="mini-btn secondary" onclick="deleteRow('notes', '${note.id}', loadNotes)">Delete</button></div></div>`).join("")}async function editNote(id,currentTitle,currentContent){const title=prompt("Edit note title",currentTitle||"");if(title===null)return;const content=prompt("Edit note content",currentContent||"");if(content===null)return;const{error}=await client.from("notes").update({title:title.trim()||"Untitled",content:content.trim(),updated_at:new Date().toISOString()}).eq("id",id).eq("user_id",currentUser.id);if(error)return showError(error.message);await loadNotes()}
-        async function saveSales(){const payload={user_id:currentUser.id,entry_date:todayISO(),dials:Number(document.getElementById("salesDials").value||0),contacts:Number(document.getElementById("salesContacts").value||0),appointments:Number(document.getElementById("salesAppointments").value||0),presentations:Number(document.getElementById("salesPresentations").value||0),applications:Number(document.getElementById("salesApplications").value||0),closed_sales:Number(document.getElementById("salesClosed").value||0),income:Number(document.getElementById("salesIncome").value||0)};const{data:existing}=await client.from("sales_entries").select("id").eq("user_id",currentUser.id).eq("entry_date",todayISO()).maybeSingle();let error;if(existing){const result=await client.from("sales_entries").update(payload).eq("id",existing.id);error=result.error}else{const result=await client.from("sales_entries").insert(payload);error=result.error}if(error)return showError(error.message);await loadSales();await loadWeeklySales()}async function quickDials(amount){const current=Number(document.getElementById("salesDials").value||0);document.getElementById("salesDials").value=current+amount;await saveSales()}async function loadSales(){const{data,error}=await client.from("sales_entries").select("*").eq("user_id",currentUser.id).eq("entry_date",todayISO()).maybeSingle();if(error)return showError(error.message);const sales=data||{},dials=sales.dials||0,contacts=sales.contacts||0,appointments=sales.appointments||0,presentations=sales.presentations||0,applications=sales.applications||0,closed=sales.closed_sales||0,income=Number(sales.income||0);document.getElementById("salesViewDials").textContent=dials;document.getElementById("salesViewContacts").textContent=contacts;document.getElementById("salesViewAppointments").textContent=appointments;document.getElementById("salesViewPresentations").textContent=presentations;document.getElementById("salesViewApplications").textContent=applications;document.getElementById("salesViewClosed").textContent=closed;document.getElementById("salesViewIncome").textContent="$"+income.toLocaleString();document.getElementById("dashDials").textContent=dials;document.getElementById("dashContacts").textContent=contacts;document.getElementById("dashIncome").textContent="$"+income.toLocaleString();document.getElementById("salesDials").value=dials||"";document.getElementById("salesContacts").value=contacts||"";document.getElementById("salesAppointments").value=appointments||"";document.getElementById("salesPresentations").value=presentations||"";document.getElementById("salesApplications").value=applications||"";document.getElementById("salesClosed").value=closed||"";document.getElementById("salesIncome").value=income||""}
-        async function loadWeeklySales(){const{data,error}=await client.from("sales_entries").select("*").eq("user_id",currentUser.id).gte("entry_date",startOfWeekISO()).order("entry_date",{ascending:false});if(error)return showError(error.message);const rows=data||[],totals=rows.reduce((acc,row)=>{acc.dials+=row.dials||0;acc.contacts+=row.contacts||0;acc.closed+=row.closed_sales||0;acc.income+=Number(row.income||0);return acc},{dials:0,contacts:0,closed:0,income:0});document.getElementById("weeklyDials").textContent=totals.dials;document.getElementById("weeklyContacts").textContent=totals.contacts;document.getElementById("weeklyClosed").textContent=totals.closed;document.getElementById("weeklyIncome").textContent="$"+totals.income.toLocaleString();document.getElementById("homeWeeklyIncome").textContent="$"+totals.income.toLocaleString();const goal=Number(settings.weekly_income_goal||2000),percent=Math.min(100,Math.round(totals.income/goal*100));document.getElementById("weeklyIncomeProgress").style.width=percent+"%";document.getElementById("weeklyIncomeText").textContent="$"+totals.income.toLocaleString()+" of $"+goal.toLocaleString()+" weekly target";const salesHistory=document.getElementById("salesHistory");if(!rows.length){salesHistory.innerHTML='<p class="muted">No sales history this week yet.</p>';return}salesHistory.innerHTML=rows.map(row=>`<div class="history-day"><strong>${row.entry_date}</strong><p class="muted">Dials: ${row.dials||0}</p><p class="muted">Contacts: ${row.contacts||0}</p><p class="muted">Sales: ${row.closed_sales||0}</p><p class="muted">Income: $${Number(row.income||0).toLocaleString()}</p></div>`).join("")}
-        async function saveHealth(){const payload={user_id:currentUser.id,entry_date:todayISO(),weight:Number(document.getElementById("healthWeight").value||0),water_oz:Number(document.getElementById("healthWater").value||0),steps:Number(document.getElementById("healthSteps").value||0),sleep_hours:Number(document.getElementById("healthSleep").value||0),workout:document.getElementById("healthWorkout").value.trim()};const{data:existing}=await client.from("health_entries").select("id").eq("user_id",currentUser.id).eq("entry_date",todayISO()).maybeSingle();let error;if(existing){const result=await client.from("health_entries").update(payload).eq("id",existing.id);error=result.error}else{const result=await client.from("health_entries").insert(payload);error=result.error}if(error)return showError(error.message);await loadHealth()}async function quickWater(amount){const current=Number(document.getElementById("healthWater").value||0);document.getElementById("healthWater").value=current+amount;await saveHealth()}async function markWorkoutDone(){document.getElementById("healthWorkout").value=document.getElementById("healthWorkout").value||"Workout done";await saveHealth();await setStatus("Gym")}async function loadHealth(){const{data,error}=await client.from("health_entries").select("*").eq("user_id",currentUser.id).eq("entry_date",todayISO()).maybeSingle();if(error)return showError(error.message);const h=data||{};document.getElementById("healthViewWeight").textContent=h.weight?h.weight+" lb":"Not logged";document.getElementById("healthViewWater").textContent=(h.water_oz||0)+" oz";document.getElementById("healthViewSteps").textContent=h.steps||0;document.getElementById("healthViewSleep").textContent=(h.sleep_hours||0)+"h";document.getElementById("healthViewWorkout").textContent=h.workout||"Not logged";document.getElementById("homeWater").textContent=(h.water_oz||0)+" oz";document.getElementById("homeSteps").textContent=h.steps||0;document.getElementById("homeWorkout").textContent=h.workout||"Not logged";document.getElementById("healthWeight").value=h.weight||"";document.getElementById("healthWater").value=h.water_oz||"";document.getElementById("healthSteps").value=h.steps||"";document.getElementById("healthSleep").value=h.sleep_hours||"";document.getElementById("healthWorkout").value=h.workout||"";const water=Number(h.water_oz||0),goal=Number(settings.water_goal_oz||80),waterPercent=Math.min(100,Math.round(water/goal*100));document.getElementById("waterProgress").style.width=waterPercent+"%";document.getElementById("waterProgressText").textContent=water+" of "+goal+" oz water goal"}
-        async function addMoneyGoal(){const goal_name=document.getElementById("moneyName").value.trim(),target_amount=Number(document.getElementById("moneyTarget").value||0),current_amount=Number(document.getElementById("moneyCurrent").value||0);if(!goal_name)return;const{error}=await client.from("money_goals").insert({user_id:currentUser.id,goal_name,target_amount,current_amount});if(error)return showError(error.message);document.getElementById("moneyName").value="";document.getElementById("moneyTarget").value="";document.getElementById("moneyCurrent").value="";await loadMoneyGoals()}async function loadMoneyGoals(){const{data,error}=await client.from("money_goals").select("*").eq("user_id",currentUser.id).order("created_at",{ascending:false});if(error)return showError(error.message);const moneyList=document.getElementById("moneyList");if(!data.length){moneyList.innerHTML='<p class="muted">No money goals yet.</p>';return}moneyList.innerHTML=data.map(goal=>{const target=Number(goal.target_amount||0),current=Number(goal.current_amount||0),percent=target>0?Math.min(100,Math.round(current/target*100)):0;return `<div class="list-item"><span>${escapeHtml(goal.goal_name)}</span><strong>$${current.toLocaleString()} / $${target.toLocaleString()}</strong><div style="clear:both"></div><div class="progress"><span style="width:${percent}%;"></span></div><p class="muted">${percent}% complete</p><div class="actions"><button class="mini-btn secondary" onclick="addDeposit('${goal.id}', ${current}, 50)">+$50</button><button class="mini-btn secondary" onclick="addDeposit('${goal.id}', ${current}, 100)">+$100</button><button class="mini-btn secondary" onclick="editMoneyGoal('${goal.id}', '${escapeForPrompt(goal.goal_name)}', ${target}, ${current})">Edit</button><button class="mini-btn secondary" onclick="deleteRow('money_goals', '${goal.id}', loadMoneyGoals)">Delete</button></div></div>`}).join("")}async function editMoneyGoal(id,name,target,current){const newName=prompt("Goal name",name||"");if(newName===null)return;const newTarget=prompt("Target amount",target||0);if(newTarget===null)return;const newCurrent=prompt("Current amount",current||0);if(newCurrent===null)return;const{error}=await client.from("money_goals").update({goal_name:newName.trim()||"Goal",target_amount:Number(newTarget||0),current_amount:Number(newCurrent||0),updated_at:new Date().toISOString()}).eq("id",id).eq("user_id",currentUser.id);if(error)return showError(error.message);await loadMoneyGoals()}async function addDeposit(id,current,amount){const{error}=await client.from("money_goals").update({current_amount:Number(current||0)+amount,updated_at:new Date().toISOString()}).eq("id",id).eq("user_id",currentUser.id);if(error)return showError(error.message);await loadMoneyGoals()}
-        async function addCrm(){const name=document.getElementById("crmName").value.trim(),category=document.getElementById("crmCategory").value.trim(),last_contact=document.getElementById("crmLast").value||null,next_follow_up=document.getElementById("crmNext").value||null,notes=document.getElementById("crmNotes").value.trim();if(!name)return;const{error}=await client.from("crm_contacts").insert({user_id:currentUser.id,name,category,last_contact,next_follow_up,notes});if(error)return showError(error.message);document.getElementById("crmName").value="";document.getElementById("crmCategory").value="";document.getElementById("crmLast").value="";document.getElementById("crmNext").value="";document.getElementById("crmNotes").value="";await loadCrm()}async function loadCrm(){const{data,error}=await client.from("crm_contacts").select("*").eq("user_id",currentUser.id).order("created_at",{ascending:false});if(error)return showError(error.message);const crmList=document.getElementById("crmList");if(!data.length){crmList.innerHTML='<p class="muted">No contacts yet.</p>';return}crmList.innerHTML=data.map(contact=>`<div class="list-item"><strong style="float:none;">${escapeHtml(contact.name)}</strong><p class="muted">${escapeHtml(contact.category||"No category")}</p><p class="muted">Last: ${contact.last_contact||"None"} | Next: ${contact.next_follow_up||"None"}</p><p class="muted">${escapeHtml(contact.notes||"")}</p><div class="actions"><button class="mini-btn secondary" onclick="editCrm('${contact.id}', '${escapeForPrompt(contact.name)}', '${escapeForPrompt(contact.category||"")}', '${contact.last_contact||""}', '${contact.next_follow_up||""}', '${escapeForPrompt(contact.notes||"")}')">Edit</button><button class="mini-btn secondary" onclick="markFollowUpDone('${contact.id}')">Followed up</button><button class="mini-btn secondary" onclick="deleteRow('crm_contacts', '${contact.id}', loadCrm)">Delete</button></div></div>`).join("")}async function editCrm(id,name,category,last,next,notes){const newName=prompt("Name",name||"");if(newName===null)return;const newCategory=prompt("Category",category||"");if(newCategory===null)return;const newNext=prompt("Next follow-up date, YYYY-MM-DD",next||"");if(newNext===null)return;const newNotes=prompt("Notes",notes||"");if(newNotes===null)return;const{error}=await client.from("crm_contacts").update({name:newName.trim()||"Contact",category:newCategory.trim(),next_follow_up:newNext||null,notes:newNotes.trim(),updated_at:new Date().toISOString()}).eq("id",id).eq("user_id",currentUser.id);if(error)return showError(error.message);await loadCrm()}async function markFollowUpDone(id){const today=todayISO();const{error}=await client.from("crm_contacts").update({last_contact:today,next_follow_up:null,updated_at:new Date().toISOString()}).eq("id",id).eq("user_id",currentUser.id);if(error)return showError(error.message);await loadCrm()}
-        async function deleteRow(table,id,callback){const{error}=await client.from(table).delete().eq("id",id).eq("user_id",currentUser.id);if(error)return showError(error.message);await callback()}function startRealtime(){const tables=["tasks","notes","sales_entries","health_entries","money_goals","crm_contacts","daily_status","user_settings"];tables.forEach(table=>{client.channel(table+"-channel").on("postgres_changes",{event:"*",schema:"public",table},()=>loadAll()).subscribe()})}function showError(message){syncStatus.textContent=message}function escapeForPrompt(text){return String(text||"").replace(/\/g,"\\").replace(/'/g,"\'").replace(/
-    /g," ").replace(/
-    /g," ")}function escapeHtml(text){const div=document.createElement("div");div.textContent=text||"";return div.innerHTML}checkSession();
-      </script>
+    const SUPABASE_URL = "https://gztozbdnyphpofccvwvc.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6dG96YmRueXBocG9mY2N2d3ZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MjUyNzksImV4cCI6MjA5NjEwMTI3OX0.V1XbII8XqS7vuIYcoxf0aL0mAlluatj_xdNQTOHih_A";
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const authView = document.getElementById("authView"),
+        dashboardView = document.getElementById("dashboardView"),
+        authMessage = document.getElementById("authMessage"),
+        userEmail = document.getElementById("userEmail"),
+        syncStatus = document.getElementById("syncStatus");
+    let currentUser = null,
+        dailyStatusId = null,
+        settingsId = null,
+        currentStatus = "Online",
+        dayComplete = false,
+        settings = {
+            display_name: "Diogo",
+            weekly_income_goal: 2000,
+            daily_dial_goal: 100,
+            water_goal_oz: 80,
+            step_goal: 10000
+        };
+    document.getElementById("todayText").textContent = new Date().toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "long",
+        day: "numeric"
+    });
+    document.getElementById("deviceText").textContent = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? "iPhone" : "Mac or Web";
+    function openTab(name, btn) {
+        document.querySelectorAll(".tab-page").forEach(p => p.classList.remove("active"));
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.getElementById("tab-" + name).classList.add("active");
+        btn.classList.add("active");
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        })
+    }
+    function todayISO() {
+        return new Date().toISOString().slice(0, 10)
+    }
+    function startOfWeekISO() {
+        const now = new Date(),
+            day = now.getDay(),
+            diff = now.getDate() - day + (day === 0 ? -6 : 1),
+            monday = new Date(now.setDate(diff));
+        monday.setHours(0, 0, 0, 0);
+        return monday.toISOString().slice(0, 10)
+    }
+    async function checkSession() {
+        const {data} = await client.auth.getSession();
+        if (data.session) {
+            currentUser = data.session.user;
+            showDashboard()
+        } else
+            showAuth()
+    }
+    function showAuth() {
+        authView.classList.remove("hidden");
+        dashboardView.classList.add("hidden")
+    }
+    async function showDashboard() {
+        authView.classList.add("hidden");
+        dashboardView.classList.remove("hidden");
+        userEmail.textContent = currentUser.email;
+        await loadAll();
+        startRealtime()
+    }
+    async function signUp() {
+        const email = document.getElementById("emailInput").value.trim(),
+            password = document.getElementById("passwordInput").value.trim();
+        authMessage.textContent = "Creating account...";
+        const {error} = await client.auth.signUp({
+            email,
+            password
+        });
+        authMessage.textContent = error ? error.message : "Account created. Check your email if needed."
+    }
+    async function signIn() {
+        const email = document.getElementById("emailInput").value.trim(),
+            password = document.getElementById("passwordInput").value.trim();
+        authMessage.textContent = "Logging in...";
+        const {data, error} = await client.auth.signInWithPassword({
+            email,
+            password
+        });
+        if (error) {
+            authMessage.textContent = error.message;
+            return
+        }
+        currentUser = data.user;
+        showDashboard()
+    }
+    async function signOut() {
+        await client.auth.signOut();
+        currentUser = null;
+        showAuth()
+    }
+    async function loadAll() {
+        if (!currentUser)
+            return;
+        syncStatus.textContent = "Loading";
+        await loadSettings();
+        await Promise.all([loadTasks(), loadNotes(), loadSales(), loadHealth(), loadMoneyGoals(), loadCrm(), loadDailyStatus(), loadWeeklySales()]);
+        syncStatus.textContent = "Synced"
+    }
+    async function loadSettings() {
+        const {data, error} = await client.from("user_settings").select("*").eq("user_id", currentUser.id).maybeSingle();
+        if (error)
+            return showError(error.message);
+        if (!data) {
+            const {data: created, error: insertError} = await client.from("user_settings").insert({
+                user_id: currentUser.id,
+                display_name: "Diogo",
+                weekly_income_goal: 2000,
+                daily_dial_goal: 100,
+                water_goal_oz: 80,
+                step_goal: 10000,
+                theme: "black glass"
+            }).select().single();
+            if (insertError)
+                return showError(insertError.message);
+            settingsId = created.id;
+            settings = created
+        } else {
+            settingsId = data.id;
+            settings = {
+                ...settings,
+                ...data
+            }
+        }
+        document.getElementById("settingName").value = settings.display_name || "Diogo";
+        document.getElementById("settingIncomeGoal").value = settings.weekly_income_goal || 2000;
+        document.getElementById("settingDialGoal").value = settings.daily_dial_goal || 100;
+        document.getElementById("settingWaterGoal").value = settings.water_goal_oz || 80;
+        document.getElementById("settingStepGoal").value = settings.step_goal || 10000
+    }
+    async function saveSettings() {
+        const payload = {
+            user_id: currentUser.id,
+            display_name: document.getElementById("settingName").value.trim() || "Diogo",
+            weekly_income_goal: Number(document.getElementById("settingIncomeGoal").value || 2000),
+            daily_dial_goal: Number(document.getElementById("settingDialGoal").value || 100),
+            water_goal_oz: Number(document.getElementById("settingWaterGoal").value || 80),
+            step_goal: Number(document.getElementById("settingStepGoal").value || 10000),
+            theme: "black glass",
+            updated_at: new Date().toISOString()
+        };
+        const {error} = await client.from("user_settings").update(payload).eq("id", settingsId);
+        if (error)
+            return showError(error.message);
+        settings = {
+            ...settings,
+            ...payload
+        };
+        await loadAll()
+    }
+    async function loadDailyStatus() {
+        const {data, error} = await client.from("daily_status").select("*").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle();
+        if (error)
+            return showError(error.message);
+        if (!data) {
+            dailyStatusId = null;
+            currentStatus = "Online";
+            dayComplete = false;
+            updateStatusUI();
+            return
+        }
+        dailyStatusId = data.id;
+        currentStatus = data.status || "Online";
+        dayComplete = !!data.day_complete;
+        document.getElementById("focusInput").value = data.focus || "";
+        document.getElementById("focusView").textContent = data.focus || "Win the day. Track the reps.";
+        updateStatusUI()
+    }
+    function updateStatusUI() {
+        document.getElementById("statusPill").textContent = "● " + currentStatus;
+        document.getElementById("dayCompleteBtn").textContent = dayComplete ? "Day complete" : "Mark day complete";
+        document.querySelectorAll(".status-btn").forEach(btn => btn.classList.toggle("active", btn.textContent.trim() === currentStatus || btn.textContent.trim() === "Calls" && currentStatus === "On calls"))
+    }
+    async function saveDailyStatus() {
+        const focus = document.getElementById("focusInput").value.trim(),
+            payload = {
+                user_id: currentUser.id,
+                entry_date: todayISO(),
+                status: currentStatus,
+                focus,
+                day_complete: dayComplete,
+                updated_at: new Date().toISOString()
+            };
+        let error;
+        if (dailyStatusId) {
+            const result = await client.from("daily_status").update(payload).eq("id", dailyStatusId);
+            error = result.error
+        } else {
+            const result = await client.from("daily_status").insert(payload).select().single();
+            error = result.error;
+            if (result.data)
+                dailyStatusId = result.data.id
+        }
+        if (error)
+            return showError(error.message);
+        document.getElementById("focusView").textContent = focus || "Win the day. Track the reps.";
+        await loadDailyStatus()
+    }
+    async function setStatus(status) {
+        currentStatus = status;
+        updateStatusUI();
+        await saveDailyStatus()
+    }
+    async function toggleDayComplete() {
+        dayComplete = !dayComplete;
+        updateStatusUI();
+        await saveDailyStatus()
+    }
+    async function loadTasks() {
+        const {data, error} = await client.from("tasks").select("*").eq("user_id", currentUser.id).order("created_at", {
+            ascending: false
+        });
+        if (error)
+            return showError(error.message);
+        renderTasks(data || [])
+    }
+    function renderTasks(tasks) {
+        document.getElementById("taskCount").textContent = tasks.length;
+        const taskList = document.getElementById("taskList");
+        if (!tasks.length) {
+            taskList.innerHTML = '<p class="muted">No tasks yet. Add your first one.</p>';
+            return
+        }
+        taskList.innerHTML = tasks.map(task => `<div class="row"><div class="left"><input type="checkbox" ${task.completed ? "checked" : ""} onchange="toggleTask('${task.id}', ${!task.completed})"/><span class="title ${task.completed ? "done" : ""}">${escapeHtml(task.title)}</span></div><button class="mini-btn secondary" onclick="deleteTask('${task.id}')">Delete</button></div>`).join("")
+    }
+    async function addTask() {
+        const input = document.getElementById("taskInput"),
+            title = input.value.trim();
+        if (!title)
+            return;
+        const {error} = await client.from("tasks").insert({
+            title,
+            user_id: currentUser.id
+        });
+        if (error)
+            return showError(error.message);
+        input.value = "";
+        await loadTasks()
+    }
+    async function toggleTask(id, completed) {
+        const {error} = await client.from("tasks").update({
+            completed
+        }).eq("id", id).eq("user_id", currentUser.id);
+        if (error)
+            return showError(error.message);
+        await loadTasks()
+    }
+    async function deleteTask(id) {
+        const {error} = await client.from("tasks").delete().eq("id", id).eq("user_id", currentUser.id);
+        if (error)
+            return showError(error.message);
+        await loadTasks()
+    }
+    async function addNote() {
+        const title = document.getElementById("noteTitle").value.trim(),
+            content = document.getElementById("noteContent").value.trim();
+        if (!title)
+            return;
+        const {error} = await client.from("notes").insert({
+            user_id: currentUser.id,
+            title,
+            content
+        });
+        if (error)
+            return showError(error.message);
+        document.getElementById("noteTitle").value = "";
+        document.getElementById("noteContent").value = "";
+        await loadNotes()
+    }
+    async function loadNotes() {
+        const {data, error} = await client.from("notes").select("*").eq("user_id", currentUser.id).order("created_at", {
+            ascending: false
+        });
+        if (error)
+            return showError(error.message);
+        const notesList = document.getElementById("notesList");
+        if (!data.length) {
+            notesList.innerHTML = '<p class="muted">No notes yet.</p>';
+            return
+        }
+        notesList.innerHTML = data.map(note => `<div class="list-item"><strong style="float:none;">${escapeHtml(note.title)}</strong><p class="muted">${escapeHtml(note.content || "")}</p><button class="mini-btn secondary" onclick="deleteRow('notes', '${note.id}', loadNotes)">Delete</button></div>`).join("")
+    }
+    async function saveSales() {
+        const payload = {
+            user_id: currentUser.id,
+            entry_date: todayISO(),
+            dials: Number(document.getElementById("salesDials").value || 0),
+            contacts: Number(document.getElementById("salesContacts").value || 0),
+            appointments: Number(document.getElementById("salesAppointments").value || 0),
+            presentations: Number(document.getElementById("salesPresentations").value || 0),
+            applications: Number(document.getElementById("salesApplications").value || 0),
+            closed_sales: Number(document.getElementById("salesClosed").value || 0),
+            income: Number(document.getElementById("salesIncome").value || 0)
+        };
+        const {data: existing} = await client.from("sales_entries").select("id").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle();
+        let error;
+        if (existing) {
+            const result = await client.from("sales_entries").update(payload).eq("id", existing.id);
+            error = result.error
+        } else {
+            const result = await client.from("sales_entries").insert(payload);
+            error = result.error
+        }
+        if (error)
+            return showError(error.message);
+        await loadSales();
+        await loadWeeklySales()
+    }
+    async function quickDials(amount) {
+        const current = Number(document.getElementById("salesDials").value || 0);
+        document.getElementById("salesDials").value = current + amount;
+        await saveSales()
+    }
+    async function loadSales() {
+        const {data, error} = await client.from("sales_entries").select("*").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle();
+        if (error)
+            return showError(error.message);
+        const sales = data || {},
+            dials = sales.dials || 0,
+            contacts = sales.contacts || 0,
+            appointments = sales.appointments || 0,
+            presentations = sales.presentations || 0,
+            applications = sales.applications || 0,
+            closed = sales.closed_sales || 0,
+            income = Number(sales.income || 0);
+        document.getElementById("salesViewDials").textContent = dials;
+        document.getElementById("salesViewContacts").textContent = contacts;
+        document.getElementById("salesViewAppointments").textContent = appointments;
+        document.getElementById("salesViewPresentations").textContent = presentations;
+        document.getElementById("salesViewApplications").textContent = applications;
+        document.getElementById("salesViewClosed").textContent = closed;
+        document.getElementById("salesViewIncome").textContent = "$" + income.toLocaleString();
+        document.getElementById("dashDials").textContent = dials;
+        document.getElementById("dashContacts").textContent = contacts;
+        document.getElementById("dashIncome").textContent = "$" + income.toLocaleString();
+        document.getElementById("salesDials").value = dials || "";
+        document.getElementById("salesContacts").value = contacts || "";
+        document.getElementById("salesAppointments").value = appointments || "";
+        document.getElementById("salesPresentations").value = presentations || "";
+        document.getElementById("salesApplications").value = applications || "";
+        document.getElementById("salesClosed").value = closed || "";
+        document.getElementById("salesIncome").value = income || ""
+    }
+    async function loadWeeklySales() {
+        const {data, error} = await client.from("sales_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", startOfWeekISO()).order("entry_date", {
+            ascending: false
+        });
+        if (error)
+            return showError(error.message);
+        const rows = data || [],
+            totals = rows.reduce((acc, row) => {
+                acc.dials += row.dials || 0;
+                acc.contacts += row.contacts || 0;
+                acc.closed += row.closed_sales || 0;
+                acc.income += Number(row.income || 0);
+                return acc
+            }, {
+                dials: 0,
+                contacts: 0,
+                closed: 0,
+                income: 0
+            });
+        document.getElementById("weeklyDials").textContent = totals.dials;
+        document.getElementById("weeklyContacts").textContent = totals.contacts;
+        document.getElementById("weeklyClosed").textContent = totals.closed;
+        document.getElementById("weeklyIncome").textContent = "$" + totals.income.toLocaleString();
+        document.getElementById("homeWeeklyIncome").textContent = "$" + totals.income.toLocaleString();
+        const goal = Number(settings.weekly_income_goal || 2000),
+            percent = Math.min(100, Math.round(totals.income / goal * 100));
+        document.getElementById("weeklyIncomeProgress").style.width = percent + "%";
+        document.getElementById("weeklyIncomeText").textContent = "$" + totals.income.toLocaleString() + " of $" + goal.toLocaleString() + " weekly target";
+        const salesHistory = document.getElementById("salesHistory");
+        if (!rows.length) {
+            salesHistory.innerHTML = '<p class="muted">No sales history this week yet.</p>';
+            return
+        }
+        salesHistory.innerHTML = rows.map(row => `<div class="history-day"><strong>${row.entry_date}</strong><p class="muted">Dials: ${row.dials || 0}</p><p class="muted">Contacts: ${row.contacts || 0}</p><p class="muted">Sales: ${row.closed_sales || 0}</p><p class="muted">Income: $${Number(row.income || 0).toLocaleString()}</p></div>`).join("")
+    }
+    async function saveHealth() {
+        const payload = {
+            user_id: currentUser.id,
+            entry_date: todayISO(),
+            weight: Number(document.getElementById("healthWeight").value || 0),
+            water_oz: Number(document.getElementById("healthWater").value || 0),
+            steps: Number(document.getElementById("healthSteps").value || 0),
+            sleep_hours: Number(document.getElementById("healthSleep").value || 0),
+            workout: document.getElementById("healthWorkout").value.trim()
+        };
+        const {data: existing} = await client.from("health_entries").select("id").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle();
+        let error;
+        if (existing) {
+            const result = await client.from("health_entries").update(payload).eq("id", existing.id);
+            error = result.error
+        } else {
+            const result = await client.from("health_entries").insert(payload);
+            error = result.error
+        }
+        if (error)
+            return showError(error.message);
+        await loadHealth()
+    }
+    async function quickWater(amount) {
+        const current = Number(document.getElementById("healthWater").value || 0);
+        document.getElementById("healthWater").value = current + amount;
+        await saveHealth()
+    }
+    async function markWorkoutDone() {
+        document.getElementById("healthWorkout").value = document.getElementById("healthWorkout").value || "Workout done";
+        await saveHealth();
+        await setStatus("Gym")
+    }
+    async function loadHealth() {
+        const {data, error} = await client.from("health_entries").select("*").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle();
+        if (error)
+            return showError(error.message);
+        const h = data || {};
+        document.getElementById("healthViewWeight").textContent = h.weight ? h.weight + " lb" : "Not logged";
+        document.getElementById("healthViewWater").textContent = (h.water_oz || 0) + " oz";
+        document.getElementById("healthViewSteps").textContent = h.steps || 0;
+        document.getElementById("healthViewSleep").textContent = (h.sleep_hours || 0) + "h";
+        document.getElementById("healthViewWorkout").textContent = h.workout || "Not logged";
+        document.getElementById("homeWater").textContent = (h.water_oz || 0) + " oz";
+        document.getElementById("homeSteps").textContent = h.steps || 0;
+        document.getElementById("homeWorkout").textContent = h.workout || "Not logged";
+        document.getElementById("healthWeight").value = h.weight || "";
+        document.getElementById("healthWater").value = h.water_oz || "";
+        document.getElementById("healthSteps").value = h.steps || "";
+        document.getElementById("healthSleep").value = h.sleep_hours || "";
+        document.getElementById("healthWorkout").value = h.workout || "";
+        const water = Number(h.water_oz || 0),
+            goal = Number(settings.water_goal_oz || 80),
+            waterPercent = Math.min(100, Math.round(water / goal * 100));
+        document.getElementById("waterProgress").style.width = waterPercent + "%";
+        document.getElementById("waterProgressText").textContent = water + " of " + goal + " oz water goal"
+    }
+    async function addMoneyGoal() {
+        const goal_name = document.getElementById("moneyName").value.trim(),
+            target_amount = Number(document.getElementById("moneyTarget").value || 0),
+            current_amount = Number(document.getElementById("moneyCurrent").value || 0);
+        if (!goal_name)
+            return;
+        const {error} = await client.from("money_goals").insert({
+            user_id: currentUser.id,
+            goal_name,
+            target_amount,
+            current_amount
+        });
+        if (error)
+            return showError(error.message);
+        document.getElementById("moneyName").value = "";
+        document.getElementById("moneyTarget").value = "";
+        document.getElementById("moneyCurrent").value = "";
+        await loadMoneyGoals()
+    }
+    async function loadMoneyGoals() {
+        const {data, error} = await client.from("money_goals").select("*").eq("user_id", currentUser.id).order("created_at", {
+            ascending: false
+        });
+        if (error)
+            return showError(error.message);
+        const moneyList = document.getElementById("moneyList");
+        if (!data.length) {
+            moneyList.innerHTML = '<p class="muted">No money goals yet.</p>';
+            return
+        }
+        moneyList.innerHTML = data.map(goal => {
+            const target = Number(goal.target_amount || 0),
+                current = Number(goal.current_amount || 0),
+                percent = target > 0 ? Math.min(100, Math.round(current / target * 100)) : 0;
+            return `<div class="list-item"><span>${escapeHtml(goal.goal_name)}</span><strong>$${current.toLocaleString()} / $${target.toLocaleString()}</strong><div style="clear:both"></div><div class="progress"><span style="width:${percent}%;"></span></div><p class="muted">${percent}% complete</p><button class="mini-btn secondary" onclick="deleteRow('money_goals', '${goal.id}', loadMoneyGoals)">Delete</button></div>`
+        }).join("")
+    }
+    async function addCrm() {
+        const name = document.getElementById("crmName").value.trim(),
+            category = document.getElementById("crmCategory").value.trim(),
+            last_contact = document.getElementById("crmLast").value || null,
+            next_follow_up = document.getElementById("crmNext").value || null,
+            notes = document.getElementById("crmNotes").value.trim();
+        if (!name)
+            return;
+        const {error} = await client.from("crm_contacts").insert({
+            user_id: currentUser.id,
+            name,
+            category,
+            last_contact,
+            next_follow_up,
+            notes
+        });
+        if (error)
+            return showError(error.message);
+        document.getElementById("crmName").value = "";
+        document.getElementById("crmCategory").value = "";
+        document.getElementById("crmLast").value = "";
+        document.getElementById("crmNext").value = "";
+        document.getElementById("crmNotes").value = "";
+        await loadCrm()
+    }
+    async function loadCrm() {
+        const {data, error} = await client.from("crm_contacts").select("*").eq("user_id", currentUser.id).order("created_at", {
+            ascending: false
+        });
+        if (error)
+            return showError(error.message);
+        const crmList = document.getElementById("crmList");
+        if (!data.length) {
+            crmList.innerHTML = '<p class="muted">No contacts yet.</p>';
+            return
+        }
+        crmList.innerHTML = data.map(contact => `<div class="list-item"><strong style="float:none;">${escapeHtml(contact.name)}</strong><p class="muted">${escapeHtml(contact.category || "No category")}</p><p class="muted">Last: ${contact.last_contact || "None"} | Next: ${contact.next_follow_up || "None"}</p><p class="muted">${escapeHtml(contact.notes || "")}</p><button class="mini-btn secondary" onclick="deleteRow('crm_contacts', '${contact.id}', loadCrm)">Delete</button></div>`).join("")
+    }
+    async function deleteRow(table, id, callback) {
+        const {error} = await client.from(table).delete().eq("id", id).eq("user_id", currentUser.id);
+        if (error)
+            return showError(error.message);
+        await callback()
+    }
+    function startRealtime() {
+        const tables = ["tasks", "notes", "sales_entries", "health_entries", "money_goals", "crm_contacts", "daily_status", "user_settings"];
+        tables.forEach(table => {
+            client.channel(table + "-channel").on("postgres_changes", {
+                event: "*",
+                schema: "public",
+                table
+            }, () => loadAll()).subscribe()
+        })
+    }
+    function showError(message) {
+        syncStatus.textContent = message
+    }
+    function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text || "";
+        return div.innerHTML
+    }
+    checkSession();
+    </script>
 </body>
 </html>
