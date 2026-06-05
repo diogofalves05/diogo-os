@@ -404,6 +404,38 @@
       margin-bottom: 5px;
     }
 
+    .score-ring {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      margin: 10px auto 18px;
+      background:
+        conic-gradient(rgba(0, 255, 204, 0.85) 0deg, rgba(255, 255, 255, 0.12) 0deg);
+      box-shadow: inset 0 0 0 14px rgba(5, 5, 9, 0.72);
+    }
+
+    .score-ring span {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -0.06em;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .score-item {
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+    }
+
     .crm-dashboard {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -454,6 +486,7 @@
       .status-grid { grid-template-columns: repeat(2, 1fr); }
       .history-grid { grid-template-columns: 1fr; }
       .health-history-grid { grid-template-columns: 1fr; }
+      .score-grid { grid-template-columns: 1fr; }
       .crm-dashboard { grid-template-columns: 1fr; }
 
       .tabs {
@@ -594,6 +627,20 @@
           </div>
 
           <div class="card half">
+            <h2>Daily Score</h2>
+            <div class="score-ring" id="dailyScoreRing">
+              <span id="dailyScore">0</span>
+            </div>
+            <p class="muted" id="dailyScoreStatus" style="text-align:center;">Loading score...</p>
+
+            <div class="score-grid">
+              <div class="score-item">Sales <strong style="float:right;" id="salesScore">0</strong></div>
+              <div class="score-item">Health <strong style="float:right;" id="healthScore">0</strong></div>
+              <div class="score-item">Tasks <strong style="float:right;" id="taskScore">0</strong></div>
+            </div>
+          </div>
+
+          <div class="card full">
             <h2>Today Snapshot</h2>
             <div class="section-list">
               <div class="list-item">Water <strong id="homeWater">0 oz</strong></div>
@@ -659,6 +706,16 @@
             </div>
 
             <div id="healthHistory" class="health-history-grid"></div>
+          </div>
+
+          <div class="card full">
+            <h2>Streaks</h2>
+            <div class="stats">
+              <div class="stat"><strong id="salesStreak">0</strong><span class="muted">Sales activity streak</span></div>
+              <div class="stat"><strong id="workoutStreak">0</strong><span class="muted">Workout streak</span></div>
+              <div class="stat"><strong id="waterStreak">0</strong><span class="muted">Water streak</span></div>
+              <div class="stat"><strong id="taskStreak">0</strong><span class="muted">Task streak</span></div>
+            </div>
           </div>
 
           <div class="card full">
@@ -772,7 +829,7 @@
       </section>
 
       <div class="footer">
-        Diogo OS v8, weekly health history added.
+        Diogo OS v9, daily score and streaks added.
       </div>
     </section>
   </main>
@@ -891,6 +948,8 @@
         loadSales(),
         loadHealth(),
         loadWeeklyHealth(),
+        loadDailyScore(),
+        loadStreaks(),
         loadMoneyGoals(),
         loadCrm(),
         loadDailyStatus(),
@@ -1052,6 +1111,8 @@
       if (error) return showError(error.message);
       input.value = "";
       await loadTasks();
+      await loadDailyScore();
+      await loadStreaks();
     }
 
     async function editTask(id, oldTitle) {
@@ -1060,12 +1121,16 @@
       const { error } = await client.from("tasks").update({ title: title.trim(), updated_at: new Date().toISOString() }).eq("id", id).eq("user_id", currentUser.id);
       if (error) return showError(error.message);
       await loadTasks();
+      await loadDailyScore();
+      await loadStreaks();
     }
 
     async function toggleTask(id, completed) {
       const { error } = await client.from("tasks").update({ completed, updated_at: new Date().toISOString() }).eq("id", id).eq("user_id", currentUser.id);
       if (error) return showError(error.message);
       await loadTasks();
+      await loadDailyScore();
+      await loadStreaks();
     }
 
     async function deleteTask(id) {
@@ -1147,6 +1212,8 @@
       if (error) return showError(error.message);
       await loadSales();
       await loadWeeklySales();
+      await loadDailyScore();
+      await loadStreaks();
     }
 
     async function quickDials(amount) {
@@ -1254,6 +1321,8 @@
       if (error) return showError(error.message);
       await loadHealth();
       await loadWeeklyHealth();
+      await loadDailyScore();
+      await loadStreaks();
     }
 
     async function quickWater(amount) {
@@ -1294,6 +1363,98 @@
       const waterPercent = Math.min(100, Math.round((water / goal) * 100));
       document.getElementById("waterProgress").style.width = waterPercent + "%";
       document.getElementById("waterProgressText").textContent = water + " of " + goal + " oz water goal";
+    }
+
+    async function loadDailyScore() {
+      if (!currentUser) return;
+
+      const [{ data: tasks }, { data: sales }, { data: health }] = await Promise.all([
+        client.from("tasks").select("*").eq("user_id", currentUser.id),
+        client.from("sales_entries").select("*").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle(),
+        client.from("health_entries").select("*").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle()
+      ]);
+
+      const allTasks = tasks || [];
+      const completedTasks = allTasks.filter(task => task.completed).length;
+      const taskScore = allTasks.length ? Math.round((completedTasks / allTasks.length) * 25) : 0;
+
+      const dailyDialGoal = Number(settings.daily_dial_goal || 100);
+      const dials = Number((sales || {}).dials || 0);
+      const salesScore = Math.min(25, Math.round((dials / dailyDialGoal) * 25));
+
+      const waterGoal = Number(settings.water_goal_oz || 80);
+      const stepGoal = Number(settings.step_goal || 10000);
+      const water = Number((health || {}).water_oz || 0);
+      const steps = Number((health || {}).steps || 0);
+      const sleep = Number((health || {}).sleep_hours || 0);
+      const workout = ((health || {}).workout || "").trim();
+
+      let healthScore = 0;
+      healthScore += Math.min(15, Math.round((water / waterGoal) * 15));
+      healthScore += Math.min(10, Math.round((steps / stepGoal) * 10));
+      healthScore += sleep > 0 ? 5 : 0;
+      healthScore += workout ? 20 : 0;
+
+      const total = Math.min(100, taskScore + salesScore + healthScore);
+      const degrees = Math.round((total / 100) * 360);
+
+      document.getElementById("dailyScore").textContent = total;
+      document.getElementById("dailyScoreRing").style.background =
+        "conic-gradient(rgba(0, 255, 204, 0.85) " + degrees + "deg, rgba(255, 255, 255, 0.12) " + degrees + "deg)";
+
+      document.getElementById("salesScore").textContent = salesScore + "/25";
+      document.getElementById("healthScore").textContent = healthScore + "/50";
+      document.getElementById("taskScore").textContent = taskScore + "/25";
+
+      let status = "Needs attention";
+      if (total >= 85) status = "Locked in";
+      else if (total >= 65) status = "On pace";
+      else if (total >= 40) status = "Behind, but recoverable";
+
+      document.getElementById("dailyScoreStatus").textContent = status;
+    }
+
+    async function loadStreaks() {
+      const [{ data: salesRows }, { data: healthRows }, { data: tasks }] = await Promise.all([
+        client.from("sales_entries").select("*").eq("user_id", currentUser.id).order("entry_date", { ascending: false }),
+        client.from("health_entries").select("*").eq("user_id", currentUser.id).order("entry_date", { ascending: false }),
+        client.from("tasks").select("*").eq("user_id", currentUser.id)
+      ]);
+
+      const salesStreak = countDateStreak(salesRows || [], row => Number(row.dials || 0) > 0 || Number(row.contacts || 0) > 0);
+      const workoutStreak = countDateStreak(healthRows || [], row => (row.workout || "").trim().length > 0);
+      const waterGoal = Number(settings.water_goal_oz || 80);
+      const waterStreak = countDateStreak(healthRows || [], row => Number(row.water_oz || 0) >= waterGoal);
+      const taskStreak = (tasks || []).some(task => task.completed) ? 1 : 0;
+
+      document.getElementById("salesStreak").textContent = salesStreak;
+      document.getElementById("workoutStreak").textContent = workoutStreak;
+      document.getElementById("waterStreak").textContent = waterStreak;
+      document.getElementById("taskStreak").textContent = taskStreak;
+    }
+
+    function countDateStreak(rows, passes) {
+      const byDate = {};
+      rows.forEach(row => {
+        byDate[row.entry_date] = row;
+      });
+
+      let streak = 0;
+      const date = new Date();
+
+      for (let i = 0; i < 30; i++) {
+        const iso = date.toISOString().slice(0, 10);
+        const row = byDate[iso];
+
+        if (row && passes(row)) {
+          streak++;
+          date.setDate(date.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+
+      return streak;
     }
 
     async function loadWeeklyHealth() {
