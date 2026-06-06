@@ -755,6 +755,8 @@
               <div class="list-item">Weekly income <strong id="homeWeeklyIncome">$0</strong></div>
               <div class="list-item">Planner blocks <strong id="homePlannerCount">0</strong></div>
               <div class="list-item">Habits done <strong id="homeHabitCount">0</strong></div>
+              <div class="list-item">Active calories <strong id="homeActiveCalories">0</strong></div>
+              <div class="list-item">Exercise minutes <strong id="homeExerciseMinutes">0</strong></div>
             </div>
           </div>
         </div>
@@ -830,6 +832,13 @@
               <div class="stat"><strong id="workoutCount">0</strong><span class="muted">Workouts</span></div>
             </div>
 
+            <div class="stats" style="margin-top: 14px;">
+              <div class="stat"><strong id="weeklyActiveCalories">0</strong><span class="muted">Active calories</span></div>
+              <div class="stat"><strong id="weeklyExerciseMinutes">0</strong><span class="muted">Exercise minutes</span></div>
+              <div class="stat"><strong id="weeklyStandHours">0</strong><span class="muted">Stand hours</span></div>
+              <div class="stat"><strong id="avgRestingHeartRate">0</strong><span class="muted">Avg resting HR</span></div>
+            </div>
+
             <div id="healthHistory" class="health-history-grid"></div>
           </div>
 
@@ -852,6 +861,32 @@
                 <h2>Weight</h2>
                 <div id="weightChart" class="bar-chart"></div>
               </div>
+            </div>
+          </div>
+
+          <div class="card full">
+            <h2>Apple Watch Manual Log</h2>
+            <p class="muted">Copy these numbers from Apple Fitness or Apple Health for now. HealthKit auto-sync comes later with the iPhone companion app.</p>
+
+            <div class="form-grid">
+              <input id="watchActiveCalories" class="input" type="number" placeholder="Active calories" />
+              <input id="watchExerciseMinutes" class="input" type="number" placeholder="Exercise minutes" />
+              <input id="watchStandHours" class="input" type="number" placeholder="Stand hours" />
+              <input id="watchRestingHeartRate" class="input" type="number" placeholder="Resting heart rate" />
+              <input id="watchWorkoutDuration" class="input" type="number" placeholder="Workout duration minutes" />
+              <input id="watchSleepHours" class="input" type="number" placeholder="Apple Watch sleep hours" />
+            </div>
+
+            <textarea id="watchNotes" placeholder="Apple Watch notes"></textarea>
+            <button onclick="saveHealth()">Save Apple Watch data</button>
+
+            <div class="section-list" style="margin-top: 14px;">
+              <div class="list-item">Active calories <strong id="watchViewActiveCalories">0</strong></div>
+              <div class="list-item">Exercise minutes <strong id="watchViewExerciseMinutes">0</strong></div>
+              <div class="list-item">Stand hours <strong id="watchViewStandHours">0</strong></div>
+              <div class="list-item">Resting heart rate <strong id="watchViewRestingHeartRate">0 bpm</strong></div>
+              <div class="list-item">Workout duration <strong id="watchViewWorkoutDuration">0 min</strong></div>
+              <div class="list-item">Watch sleep <strong id="watchViewSleepHours">0h</strong></div>
             </div>
           </div>
 
@@ -1073,7 +1108,7 @@
       <button class="fab secondary" onclick="quickAddMenu()">Quick add</button>
 
       <div class="footer">
-        Diogo OS v15, habit tracker added.
+        Diogo OS v16, Apple Watch manual logging added.
       </div>
     </section>
   </main>
@@ -1578,7 +1613,14 @@
         water_oz: Number(document.getElementById("healthWater").value || 0),
         steps: Number(document.getElementById("healthSteps").value || 0),
         sleep_hours: Number(document.getElementById("healthSleep").value || 0),
-        workout: document.getElementById("healthWorkout").value.trim()
+        workout: document.getElementById("healthWorkout").value.trim(),
+        active_calories: Number(document.getElementById("watchActiveCalories").value || 0),
+        exercise_minutes: Number(document.getElementById("watchExerciseMinutes").value || 0),
+        stand_hours: Number(document.getElementById("watchStandHours").value || 0),
+        resting_heart_rate: Number(document.getElementById("watchRestingHeartRate").value || 0),
+        workout_duration_minutes: Number(document.getElementById("watchWorkoutDuration").value || 0),
+        watch_sleep_hours: Number(document.getElementById("watchSleepHours").value || 0),
+        watch_notes: document.getElementById("watchNotes").value.trim()
       };
 
       const { data: existing } = await client.from("health_entries").select("id").eq("user_id", currentUser.id).eq("entry_date", todayISO()).maybeSingle();
@@ -1624,12 +1666,29 @@
       document.getElementById("homeWater").textContent = (h.water_oz || 0) + " oz";
       document.getElementById("homeSteps").textContent = h.steps || 0;
       document.getElementById("homeWorkout").textContent = h.workout || "Not logged";
+      document.getElementById("homeActiveCalories").textContent = h.active_calories || 0;
+      document.getElementById("homeExerciseMinutes").textContent = h.exercise_minutes || 0;
+
+      document.getElementById("watchViewActiveCalories").textContent = h.active_calories || 0;
+      document.getElementById("watchViewExerciseMinutes").textContent = h.exercise_minutes || 0;
+      document.getElementById("watchViewStandHours").textContent = h.stand_hours || 0;
+      document.getElementById("watchViewRestingHeartRate").textContent = (h.resting_heart_rate || 0) + " bpm";
+      document.getElementById("watchViewWorkoutDuration").textContent = (h.workout_duration_minutes || 0) + " min";
+      document.getElementById("watchViewSleepHours").textContent = (h.watch_sleep_hours || 0) + "h";
 
       document.getElementById("healthWeight").value = h.weight || "";
       document.getElementById("healthWater").value = h.water_oz || "";
       document.getElementById("healthSteps").value = h.steps || "";
       document.getElementById("healthSleep").value = h.sleep_hours || "";
       document.getElementById("healthWorkout").value = h.workout || "";
+
+      document.getElementById("watchActiveCalories").value = h.active_calories || "";
+      document.getElementById("watchExerciseMinutes").value = h.exercise_minutes || "";
+      document.getElementById("watchStandHours").value = h.stand_hours || "";
+      document.getElementById("watchRestingHeartRate").value = h.resting_heart_rate || "";
+      document.getElementById("watchWorkoutDuration").value = h.workout_duration_minutes || "";
+      document.getElementById("watchSleepHours").value = h.watch_sleep_hours || "";
+      document.getElementById("watchNotes").value = h.watch_notes || "";
 
       const water = Number(h.water_oz || 0);
       const goal = Number(settings.water_goal_oz || 80);
@@ -1747,6 +1806,13 @@
       const sleepRows = rows.filter(row => Number(row.sleep_hours || 0) > 0);
       const stepRows = rows.filter(row => Number(row.steps || 0) > 0);
       const workoutRows = rows.filter(row => (row.workout || "").trim().length > 0);
+      const activeCaloriesTotal = rows.reduce((sum, row) => sum + Number(row.active_calories || 0), 0);
+      const exerciseMinutesTotal = rows.reduce((sum, row) => sum + Number(row.exercise_minutes || 0), 0);
+      const standHoursTotal = rows.reduce((sum, row) => sum + Number(row.stand_hours || 0), 0);
+      const heartRows = rows.filter(row => Number(row.resting_heart_rate || 0) > 0);
+      const avgHeartRate = heartRows.length
+        ? Math.round(heartRows.reduce((sum, row) => sum + Number(row.resting_heart_rate || 0), 0) / heartRows.length)
+        : 0;
 
       const avgSleepValue = sleepRows.length
         ? sleepRows.reduce((sum, row) => sum + Number(row.sleep_hours || 0), 0) / sleepRows.length
@@ -1760,6 +1826,10 @@
       document.getElementById("avgSleep").textContent = avgSleepValue ? avgSleepValue.toFixed(1) + "h" : "0h";
       document.getElementById("avgSteps").textContent = avgStepsValue.toLocaleString();
       document.getElementById("workoutCount").textContent = workoutRows.length;
+      document.getElementById("weeklyActiveCalories").textContent = activeCaloriesTotal.toLocaleString();
+      document.getElementById("weeklyExerciseMinutes").textContent = exerciseMinutesTotal.toLocaleString();
+      document.getElementById("weeklyStandHours").textContent = standHoursTotal.toLocaleString();
+      document.getElementById("avgRestingHeartRate").textContent = avgHeartRate ? avgHeartRate + " bpm" : "0";
 
       const history = document.getElementById("healthHistory");
 
@@ -1777,6 +1847,8 @@
           <p class="muted">Sleep: ${row.sleep_hours || 0}h</p>
           <p class="muted">Workout: ${escapeHtml(row.workout || "None")}</p>
           <p class="muted">Weight: ${row.weight ? row.weight + " lb" : "None"}</p>
+          <p class="muted">Active cal: ${row.active_calories || 0}</p>
+          <p class="muted">Exercise: ${row.exercise_minutes || 0} min</p>
         </div>
       `).join("");
 
