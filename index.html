@@ -781,6 +781,7 @@
         <button class="tab-btn" onclick="openTab('charts', this)">Charts</button>
         <button class="tab-btn" onclick="openTab('monthly', this)">Monthly</button>
         <button class="tab-btn" onclick="openTab('review', this)">Review</button>
+        <button class="tab-btn" onclick="openTab('aireview', this)">AI Review</button>
         <button class="tab-btn" onclick="openTab('backup', this)">Backup</button>
         <button class="tab-btn" onclick="toggleMobileTabs(this)">More</button>
       </nav>
@@ -1386,6 +1387,49 @@
         </div>
       </section>
 
+      <section id="tab-aireview" class="tab-page">
+        <p class="mobile-section-title">Free manual AI review workflow</p>
+        <div class="grid">
+          <div class="card full">
+            <h2>AI Review Prep</h2>
+            <p class="muted">
+              This keeps it free. Copy the prompt, paste it into ChatGPT, then paste the answer back into your review notes.
+            </p>
+
+            <div class="stats">
+              <div class="stat"><strong id="aiReviewIncome">$0</strong><span class="muted">Weekly income</span></div>
+              <div class="stat"><strong id="aiReviewDials">0</strong><span class="muted">Weekly dials</span></div>
+              <div class="stat"><strong id="aiReviewWorkouts">0</strong><span class="muted">Workouts</span></div>
+              <div class="stat"><strong id="aiReviewHabits">0%</strong><span class="muted">Habit score</span></div>
+            </div>
+
+            <button onclick="generateAiReviewPrompt()">Generate review prompt</button>
+            <textarea id="aiReviewPrompt" placeholder="Your review prompt will show here."></textarea>
+            <button class="secondary" onclick="copyAiReviewPrompt()">Copy prompt</button>
+            <p class="muted" id="aiReviewStatus">Ready.</p>
+          </div>
+
+          <div class="card full">
+            <h2>Paste AI Review</h2>
+            <p class="muted">Paste the review you get back here so it stays inside Diogo OS.</p>
+
+            <textarea id="aiReviewOutput" placeholder="Paste your AI review here."></textarea>
+            <button onclick="saveAiReviewToWeeklyReview()">Save to weekly review notes</button>
+          </div>
+
+          <div class="card full">
+            <h2>Manual Action Plan</h2>
+            <div class="form-grid">
+              <textarea id="aiActionWins" placeholder="Wins"></textarea>
+              <textarea id="aiActionFixes" placeholder="What to fix"></textarea>
+              <textarea id="aiActionFocus" placeholder="Next focus"></textarea>
+              <textarea id="aiActionPlan" placeholder="Action plan"></textarea>
+            </div>
+            <button onclick="copyActionPlan()">Copy action plan</button>
+          </div>
+        </div>
+      </section>
+
       <section id="tab-backup" class="tab-page">
         <p class="mobile-section-title">Advanced backup and restore</p>
         <div class="grid">
@@ -1495,7 +1539,7 @@
       <button class="fab secondary" onclick="quickAddMenu()">Quick add</button>
 
       <div class="footer">
-        Diogo OS v23, advanced backup tools added.
+        Diogo OS v24, AI review prep added.
       </div>
     </section>
   </main>
@@ -1632,6 +1676,7 @@
         loadWeeklyReview(),
         loadMonthlyDashboard(),
         loadBetterCharts(),
+        loadAiReviewPrep(),
         loadBackupCounts(),
         loadCrm(),
         loadDailyStatus(),
@@ -3273,6 +3318,187 @@
           document.getElementById(elementId).textContent = count || 0;
         }
       }
+    }
+
+    async function loadAiReviewPrep() {
+      const weekStart = startOfWeekISO();
+
+      const [
+        { data: salesRows },
+        { data: healthRows },
+        { data: habitRows }
+      ] = await Promise.all([
+        client.from("sales_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", weekStart),
+        client.from("health_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", weekStart),
+        client.from("habit_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", weekStart)
+      ]);
+
+      const sales = salesRows || [];
+      const health = healthRows || [];
+      const habits = habitRows || [];
+
+      const income = sales.reduce((sum, row) => sum + Number(row.income || 0), 0);
+      const dials = sales.reduce((sum, row) => sum + Number(row.dials || 0), 0);
+      const workouts = health.filter(row => (row.workout || "").trim()).length;
+      const habitScore = habits.length
+        ? Math.round((habits.filter(row => row.completed).length / habits.length) * 100)
+        : 0;
+
+      const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      };
+
+      setText("aiReviewIncome", "$" + income.toLocaleString());
+      setText("aiReviewDials", dials);
+      setText("aiReviewWorkouts", workouts);
+      setText("aiReviewHabits", habitScore + "%");
+    }
+
+    async function generateAiReviewPrompt() {
+      const weekStart = startOfWeekISO();
+
+      const [
+        { data: salesRows },
+        { data: healthRows },
+        { data: habitRows },
+        { data: plannerRows },
+        { data: crmRows },
+        { data: reviewRow }
+      ] = await Promise.all([
+        client.from("sales_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", weekStart),
+        client.from("health_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", weekStart),
+        client.from("habit_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", weekStart),
+        client.from("daily_planner").select("*").eq("user_id", currentUser.id).gte("entry_date", weekStart),
+        client.from("crm_contacts").select("*").eq("user_id", currentUser.id),
+        client.from("weekly_reviews").select("*").eq("user_id", currentUser.id).eq("week_start", weekStart).maybeSingle()
+      ]);
+
+      const sales = salesRows || [];
+      const health = healthRows || [];
+      const habits = habitRows || [];
+      const planner = plannerRows || [];
+      const crm = crmRows || [];
+
+      const salesTotals = sales.reduce((acc, row) => {
+        acc.dials += Number(row.dials || 0);
+        acc.contacts += Number(row.contacts || 0);
+        acc.appointments += Number(row.appointments || 0);
+        acc.presentations += Number(row.presentations || 0);
+        acc.applications += Number(row.applications || 0);
+        acc.closed += Number(row.closed_sales || 0);
+        acc.income += Number(row.income || 0);
+        return acc;
+      }, { dials: 0, contacts: 0, appointments: 0, presentations: 0, applications: 0, closed: 0, income: 0 });
+
+      const water = health.reduce((sum, row) => sum + Number(row.water_oz || 0), 0);
+      const workouts = health.filter(row => (row.workout || "").trim()).length;
+      const habitDone = habits.filter(row => row.completed).length;
+      const plannerDone = planner.filter(row => row.completed).length;
+      const today = todayISO();
+      const crmDue = crm.filter(row => row.next_follow_up && row.next_follow_up <= today).length;
+
+      const prompt = `Review my week and give me a direct action plan.
+
+Context:
+I am using Diogo OS to track sales, health, habits, planner, CRM, and money goals.
+
+Week start:
+${weekStart}
+
+Sales:
+Dials: ${salesTotals.dials}
+Contacts: ${salesTotals.contacts}
+Appointments: ${salesTotals.appointments}
+Presentations: ${salesTotals.presentations}
+Applications: ${salesTotals.applications}
+Closed sales: ${salesTotals.closed}
+Income: $${salesTotals.income}
+
+Health:
+Workouts: ${workouts}
+Water total: ${water} oz
+Health entries: ${health.length}
+
+Habits:
+Completed: ${habitDone}
+Total: ${habits.length}
+
+Planner:
+Completed blocks: ${plannerDone}
+Total blocks: ${planner.length}
+
+CRM:
+Total contacts: ${crm.length}
+Follow-ups due or overdue: ${crmDue}
+
+My written weekly review:
+Wins: ${(reviewRow || {}).wins || ""}
+Needs work: ${(reviewRow || {}).needs_work || ""}
+Next week focus: ${(reviewRow || {}).next_week_focus || ""}
+
+Give me:
+1. What went well
+2. What is hurting my results
+3. What I should fix first
+4. Sales action plan for next week
+5. Health action plan for next week
+6. CRM follow-up action plan
+7. A simple daily checklist for next week
+
+Keep it direct and practical.`;
+
+      document.getElementById("aiReviewPrompt").value = prompt;
+      document.getElementById("aiReviewStatus").textContent = "Prompt generated.";
+    }
+
+    async function copyAiReviewPrompt() {
+      const prompt = document.getElementById("aiReviewPrompt").value;
+      if (!prompt.trim()) {
+        document.getElementById("aiReviewStatus").textContent = "Generate the prompt first.";
+        return;
+      }
+
+      await navigator.clipboard.writeText(prompt);
+      document.getElementById("aiReviewStatus").textContent = "Prompt copied.";
+    }
+
+    async function saveAiReviewToWeeklyReview() {
+      const output = document.getElementById("aiReviewOutput").value.trim();
+      if (!output) return;
+
+      const currentNextFocus = document.getElementById("reviewNextFocus");
+      const currentNeedsWork = document.getElementById("reviewNeedsWork");
+
+      if (currentNeedsWork) {
+        currentNeedsWork.value = (currentNeedsWork.value ? currentNeedsWork.value + "\\n\\n" : "") + "AI Review:\\n" + output;
+      }
+
+      if (currentNextFocus && !currentNextFocus.value) {
+        currentNextFocus.value = "Use AI review action plan.";
+      }
+
+      await saveWeeklyReview();
+      document.getElementById("aiReviewStatus").textContent = "Saved to weekly review.";
+    }
+
+    async function copyActionPlan() {
+      const text = [
+        "Wins:",
+        document.getElementById("aiActionWins").value,
+        "",
+        "What to fix:",
+        document.getElementById("aiActionFixes").value,
+        "",
+        "Next focus:",
+        document.getElementById("aiActionFocus").value,
+        "",
+        "Action plan:",
+        document.getElementById("aiActionPlan").value
+      ].join("\\n");
+
+      await navigator.clipboard.writeText(text);
+      document.getElementById("aiReviewStatus").textContent = "Action plan copied.";
     }
 
     function getBackupTables() {
