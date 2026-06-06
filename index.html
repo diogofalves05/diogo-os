@@ -456,6 +456,44 @@
       background: linear-gradient(90deg, rgba(245, 245, 247, 0.92), rgba(0, 255, 204, 0.72));
     }
 
+    .mini-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      height: 140px;
+      padding: 14px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.055);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      margin-top: 12px;
+    }
+
+    .chart-bar-wrap {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .chart-bar {
+      width: 100%;
+      min-height: 4px;
+      border-radius: 999px 999px 8px 8px;
+      background: linear-gradient(180deg, rgba(245, 245, 247, 0.95), rgba(0, 255, 204, 0.65));
+    }
+
+    .chart-label {
+      font-size: 11px;
+      color: rgba(245, 245, 247, 0.5);
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .score-ring {
       width: 160px;
       height: 160px;
@@ -740,6 +778,7 @@
         <button class="tab-btn" onclick="openTab('settings', this)">Settings</button>
         <button class="tab-btn" onclick="openTab('habits', this)">Habits</button>
         <button class="tab-btn" onclick="openTab('planner', this)">Planner</button>
+        <button class="tab-btn" onclick="openTab('charts', this)">Charts</button>
         <button class="tab-btn" onclick="openTab('monthly', this)">Monthly</button>
         <button class="tab-btn" onclick="openTab('review', this)">Review</button>
         <button class="tab-btn" onclick="openTab('backup', this)">Backup</button>
@@ -1178,6 +1217,64 @@
         </div>
       </section>
 
+      <section id="tab-charts" class="tab-page">
+        <p class="mobile-section-title">Visual charts and progress</p>
+        <div class="grid">
+          <div class="card full">
+            <h2>Sales Charts</h2>
+            <div class="grid">
+              <div class="card half" style="box-shadow:none;">
+                <h2>Income</h2>
+                <div id="incomeMiniChart" class="mini-chart"></div>
+              </div>
+              <div class="card half" style="box-shadow:none;">
+                <h2>Dials</h2>
+                <div id="dialsMiniChart" class="mini-chart"></div>
+              </div>
+              <div class="card half" style="box-shadow:none;">
+                <h2>Contacts</h2>
+                <div id="contactsMiniChart" class="mini-chart"></div>
+              </div>
+              <div class="card half" style="box-shadow:none;">
+                <h2>Closed Sales</h2>
+                <div id="closedMiniChart" class="mini-chart"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card full">
+            <h2>Health Charts</h2>
+            <div class="grid">
+              <div class="card half" style="box-shadow:none;">
+                <h2>Water</h2>
+                <div id="waterMiniChart" class="mini-chart"></div>
+              </div>
+              <div class="card half" style="box-shadow:none;">
+                <h2>Steps</h2>
+                <div id="stepsMiniChart" class="mini-chart"></div>
+              </div>
+              <div class="card half" style="box-shadow:none;">
+                <h2>Sleep</h2>
+                <div id="sleepMiniChart" class="mini-chart"></div>
+              </div>
+              <div class="card half" style="box-shadow:none;">
+                <h2>Weight</h2>
+                <div id="weightMiniChart" class="mini-chart"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card full">
+            <h2>Progress Charts</h2>
+            <div class="section-list">
+              <div class="list-item">Weekly income progress <strong id="chartWeeklyIncomeText">$0</strong><div class="progress"><span id="chartWeeklyIncomeBar"></span></div></div>
+              <div class="list-item">Monthly income progress <strong id="chartMonthlyIncomeText">$0</strong><div class="progress"><span id="chartMonthlyIncomeBar"></span></div></div>
+              <div class="list-item">Money goals progress <strong id="chartMoneyGoalText">$0</strong><div class="progress"><span id="chartMoneyGoalBar"></span></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="tab-monthly" class="tab-page">
         <p class="mobile-section-title">Monthly dashboard and big picture</p>
         <div class="grid">
@@ -1336,7 +1433,7 @@
       <button class="fab secondary" onclick="quickAddMenu()">Quick add</button>
 
       <div class="footer">
-        Diogo OS v21, money dashboard upgraded.
+        Diogo OS v22, better charts added.
       </div>
     </section>
   </main>
@@ -1472,6 +1569,7 @@
         loadHabits(),
         loadWeeklyReview(),
         loadMonthlyDashboard(),
+        loadBetterCharts(),
         loadBackupCounts(),
         loadCrm(),
         loadDailyStatus(),
@@ -2741,6 +2839,90 @@
 
       if (error) return showError(error.message);
       await loadPlannerBlocks();
+    }
+
+    async function loadBetterCharts() {
+      const monthStart = startOfMonthISO();
+      const weekStart = startOfWeekISO();
+
+      const [
+        { data: salesRows, error: salesError },
+        { data: healthRows, error: healthError },
+        { data: moneyRows, error: moneyError }
+      ] = await Promise.all([
+        client.from("sales_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", monthStart).order("entry_date", { ascending: true }),
+        client.from("health_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", monthStart).order("entry_date", { ascending: true }),
+        client.from("money_goals").select("*").eq("user_id", currentUser.id)
+      ]);
+
+      const firstError = salesError || healthError || moneyError;
+      if (firstError) return showError(firstError.message);
+
+      const sales = salesRows || [];
+      const health = healthRows || [];
+      const money = moneyRows || [];
+
+      renderMiniChart("incomeMiniChart", sales, row => Number(row.income || 0), "$");
+      renderMiniChart("dialsMiniChart", sales, row => Number(row.dials || 0), "");
+      renderMiniChart("contactsMiniChart", sales, row => Number(row.contacts || 0), "");
+      renderMiniChart("closedMiniChart", sales, row => Number(row.closed_sales || 0), "");
+
+      renderMiniChart("waterMiniChart", health, row => Number(row.water_oz || 0), "");
+      renderMiniChart("stepsMiniChart", health, row => Number(row.steps || 0), "");
+      renderMiniChart("sleepMiniChart", health, row => Number(row.sleep_hours || 0), "");
+      renderMiniChart("weightMiniChart", health, row => Number(row.weight || 0), "");
+
+      const weeklyIncome = sales
+        .filter(row => String(row.entry_date) >= weekStart)
+        .reduce((sum, row) => sum + Number(row.income || 0), 0);
+
+      const monthlyIncome = sales.reduce((sum, row) => sum + Number(row.income || 0), 0);
+      const weeklyGoal = Number(settings.weekly_income_goal || 2000);
+      const monthlyGoal = weeklyGoal * 4;
+
+      const moneySaved = money.reduce((sum, row) => sum + Number(row.current_amount || 0), 0);
+      const moneyTarget = money.reduce((sum, row) => sum + Number(row.target_amount || 0), 0);
+
+      setProgress("chartWeeklyIncomeBar", "chartWeeklyIncomeText", weeklyIncome, weeklyGoal, "$");
+      setProgress("chartMonthlyIncomeBar", "chartMonthlyIncomeText", monthlyIncome, monthlyGoal, "$");
+      setProgress("chartMoneyGoalBar", "chartMoneyGoalText", moneySaved, moneyTarget, "$");
+    }
+
+    function renderMiniChart(elementId, rows, getValue, prefix) {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+
+      if (!rows.length) {
+        element.innerHTML = '<p class="muted">No data yet.</p>';
+        return;
+      }
+
+      const lastRows = rows.slice(-10);
+      const values = lastRows.map(row => getValue(row));
+      const maxValue = Math.max(1, ...values);
+
+      element.innerHTML = lastRows.map((row, index) => {
+        const value = values[index];
+        const height = Math.max(4, Math.round((value / maxValue) * 100));
+        const label = new Date(row.entry_date + "T00:00:00").toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
+        const title = prefix + value.toLocaleString();
+
+        return `
+          <div class="chart-bar-wrap" title="${title}">
+            <div class="chart-bar" style="height:${height}%;"></div>
+            <div class="chart-label">${label}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function setProgress(barId, textId, current, target, prefix) {
+      const percent = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+      const bar = document.getElementById(barId);
+      const text = document.getElementById(textId);
+
+      if (bar) bar.style.width = percent + "%";
+      if (text) text.textContent = prefix + current.toLocaleString() + " / " + prefix + target.toLocaleString();
     }
 
     function startOfMonthISO() {
