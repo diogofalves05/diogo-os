@@ -643,6 +643,7 @@
         <button class="tab-btn" onclick="openTab('crm', this)">CRM</button>
         <button class="tab-btn" onclick="openTab('notes', this)">Notes</button>
         <button class="tab-btn" onclick="openTab('settings', this)">Settings</button>
+        <button class="tab-btn" onclick="openTab('planner', this)">Planner</button>
         <button class="tab-btn" onclick="openTab('backup', this)">Backup</button>
         <button class="tab-btn" onclick="toggleMobileTabs(this)">More</button>
       </nav>
@@ -726,6 +727,7 @@
               <div class="list-item">Steps <strong id="homeSteps">0</strong></div>
               <div class="list-item">Workout <strong id="homeWorkout">Not logged</strong></div>
               <div class="list-item">Weekly income <strong id="homeWeeklyIncome">$0</strong></div>
+              <div class="list-item">Planner blocks <strong id="homePlannerCount">0</strong></div>
             </div>
           </div>
         </div>
@@ -946,6 +948,31 @@
         </div>
       </section>
 
+      <section id="tab-planner" class="tab-page">
+        <div class="grid">
+          <div class="card full">
+            <h2>Daily Planner</h2>
+            <p class="muted">Plan the day before it runs you.</p>
+
+            <div class="form-grid">
+              <input id="plannerTime" class="input" placeholder="Time block, example 9:00 AM" />
+              <input id="plannerTitle" class="input" placeholder="Title, example Dial block" />
+            </div>
+            <textarea id="plannerNotes" placeholder="Notes"></textarea>
+            <button onclick="addPlannerBlock()">Add block</button>
+
+            <div class="quick-grid">
+              <button class="secondary" onclick="quickPlanner('Morning Plan', 'Review focus, tasks, and top priority')">Morning</button>
+              <button class="secondary" onclick="quickPlanner('Dial Block', 'Calls, follow-ups, and sales activity')">Dials</button>
+              <button class="secondary" onclick="quickPlanner('Gym', 'Workout and health check-in')">Gym</button>
+              <button class="secondary" onclick="quickPlanner('Evening Review', 'Review wins, misses, and tomorrow')">Review</button>
+            </div>
+
+            <div id="plannerList" style="margin-top: 14px;"></div>
+          </div>
+        </div>
+      </section>
+
       <section id="tab-backup" class="tab-page">
         <div class="grid">
           <div class="card full">
@@ -963,6 +990,7 @@
               <div class="list-item">Health entries <strong id="backupHealth">0</strong></div>
               <div class="list-item">Money goals <strong id="backupMoney">0</strong></div>
               <div class="list-item">CRM contacts <strong id="backupCrm">0</strong></div>
+              <div class="list-item">Planner blocks <strong id="backupPlanner">0</strong></div>
             </div>
 
             <p class="muted" id="backupStatus">Ready.</p>
@@ -989,7 +1017,7 @@
       <button class="fab secondary" onclick="quickAddMenu()">Quick add</button>
 
       <div class="footer">
-        Diogo OS v13, health charts added.
+        Diogo OS v14, daily planner added.
       </div>
     </section>
   </main>
@@ -1112,6 +1140,7 @@
         loadDailyScore(),
         loadStreaks(),
         loadMoneyGoals(),
+        loadPlannerBlocks(),
         loadBackupCounts(),
         loadCrm(),
         loadDailyStatus(),
@@ -1942,6 +1971,124 @@
       await callback();
     }
 
+    async function addPlannerBlock() {
+      const block_time = document.getElementById("plannerTime").value.trim();
+      const title = document.getElementById("plannerTitle").value.trim();
+      const notes = document.getElementById("plannerNotes").value.trim();
+
+      if (!title) return;
+
+      const { error } = await client.from("daily_planner").insert({
+        user_id: currentUser.id,
+        entry_date: todayISO(),
+        block_time,
+        title,
+        notes,
+        completed: false
+      });
+
+      if (error) return showError(error.message);
+
+      document.getElementById("plannerTime").value = "";
+      document.getElementById("plannerTitle").value = "";
+      document.getElementById("plannerNotes").value = "";
+
+      await loadPlannerBlocks();
+    }
+
+    async function quickPlanner(title, notes) {
+      const time = prompt("Time block for " + title, "");
+      const { error } = await client.from("daily_planner").insert({
+        user_id: currentUser.id,
+        entry_date: todayISO(),
+        block_time: time || "",
+        title,
+        notes,
+        completed: false
+      });
+
+      if (error) return showError(error.message);
+      await loadPlannerBlocks();
+    }
+
+    async function loadPlannerBlocks() {
+      const { data, error } = await client
+        .from("daily_planner")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .eq("entry_date", todayISO())
+        .order("created_at", { ascending: true });
+
+      if (error) return showError(error.message);
+
+      const rows = data || [];
+      const plannerList = document.getElementById("plannerList");
+      const homePlannerCount = document.getElementById("homePlannerCount");
+
+      if (homePlannerCount) {
+        homePlannerCount.textContent = rows.length;
+      }
+
+      if (!plannerList) return;
+
+      if (!rows.length) {
+        plannerList.innerHTML = '<p class="muted">No planner blocks yet.</p>';
+        return;
+      }
+
+      plannerList.innerHTML = rows.map(row => `
+        <div class="list-item">
+          <div class="row" style="border-bottom:0; padding:0;">
+            <div class="left">
+              <input type="checkbox" ${row.completed ? "checked" : ""} onchange="togglePlannerBlock('${row.id}', ${!row.completed})" />
+              <div>
+                <strong style="float:none;">${escapeHtml(row.block_time || "Anytime")} · ${escapeHtml(row.title)}</strong>
+                <p class="muted">${escapeHtml(row.notes || "")}</p>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="mini-btn secondary" onclick="editPlannerBlock('${row.id}', '${escapeJs(row.block_time || "")}', '${escapeJs(row.title)}', '${escapeJs(row.notes || "")}')">Edit</button>
+              <button class="mini-btn secondary" onclick="deleteRow('daily_planner', '${row.id}', loadPlannerBlocks)">Delete</button>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    async function togglePlannerBlock(id, completed) {
+      const { error } = await client
+        .from("daily_planner")
+        .update({ completed, updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("user_id", currentUser.id);
+
+      if (error) return showError(error.message);
+      await loadPlannerBlocks();
+    }
+
+    async function editPlannerBlock(id, oldTime, oldTitle, oldNotes) {
+      const block_time = prompt("Time block", oldTime);
+      if (block_time === null) return;
+      const title = prompt("Title", oldTitle);
+      if (title === null || !title.trim()) return;
+      const notes = prompt("Notes", oldNotes);
+      if (notes === null) return;
+
+      const { error } = await client
+        .from("daily_planner")
+        .update({
+          block_time,
+          title: title.trim(),
+          notes,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", id)
+        .eq("user_id", currentUser.id);
+
+      if (error) return showError(error.message);
+      await loadPlannerBlocks();
+    }
+
     async function loadBackupCounts() {
       if (!currentUser) return;
 
@@ -1951,7 +2098,8 @@
         ["sales_entries", "backupSales"],
         ["health_entries", "backupHealth"],
         ["money_goals", "backupMoney"],
-        ["crm_contacts", "backupCrm"]
+        ["crm_contacts", "backupCrm"],
+        ["daily_planner", "backupPlanner"]
       ];
 
       for (const [table, elementId] of tables) {
@@ -1980,7 +2128,8 @@
         "money_goals",
         "crm_contacts",
         "daily_status",
-        "user_settings"
+        "user_settings",
+        "daily_planner"
       ];
 
       const backup = {
@@ -2094,7 +2243,8 @@
         "money_goals",
         "crm_contacts",
         "daily_status",
-        "user_settings"
+        "user_settings",
+        "daily_planner"
       ];
 
       let inserted = 0;
@@ -2156,7 +2306,7 @@
     }
 
     function startRealtime() {
-      const tables = ["tasks", "notes", "sales_entries", "health_entries", "money_goals", "crm_contacts", "daily_status", "user_settings"];
+      const tables = ["tasks", "notes", "sales_entries", "health_entries", "money_goals", "crm_contacts", "daily_status", "user_settings", "daily_planner"];
       tables.forEach(table => {
         client.channel(table + "-channel").on("postgres_changes", { event: "*", schema: "public", table }, () => loadAll()).subscribe();
       });
@@ -2169,7 +2319,7 @@
     }
 
     function quickAddMenu() {
-      const choice = prompt("Quick add: task, note, dials, water, workout");
+      const choice = prompt("Quick add: task, note, planner, dials, water, workout");
       if (!choice) return;
 
       const normalized = choice.toLowerCase().trim();
@@ -2190,6 +2340,18 @@
         document.getElementById("noteTitle").value = title;
         document.getElementById("noteContent").value = content;
         addNote();
+        return;
+      }
+
+      if (normalized === "planner") {
+        const title = prompt("Planner title");
+        if (!title) return;
+        const time = prompt("Time block") || "";
+        const notes = prompt("Notes") || "";
+        document.getElementById("plannerTitle").value = title;
+        document.getElementById("plannerTime").value = time;
+        document.getElementById("plannerNotes").value = notes;
+        addPlannerBlock();
         return;
       }
 
