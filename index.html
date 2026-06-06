@@ -1052,6 +1052,28 @@
             </div>
             <textarea id="crmNotes" placeholder="Notes"></textarea>
             <button onclick="addCrm()">Add contact</button>
+
+            <div class="card full" style="box-shadow:none; margin-top: 14px;">
+              <h2>CRM Filters</h2>
+              <input id="crmSearch" class="input" placeholder="Search contacts..." oninput="applyCrmFilters()" />
+              <div class="form-grid">
+                <select id="crmFilterStatus" class="input" onchange="applyCrmFilters()">
+                  <option value="">All statuses</option>
+                  <option value="Hot">Hot</option>
+                  <option value="Warm">Warm</option>
+                  <option value="Cold">Cold</option>
+                </select>
+                <input id="crmFilterCategory" class="input" placeholder="Filter category..." oninput="applyCrmFilters()" />
+              </div>
+              <div class="quick-grid">
+                <button class="secondary" onclick="setCrmFilterMode('all')">All</button>
+                <button class="secondary" onclick="setCrmFilterMode('overdue')">Overdue</button>
+                <button class="secondary" onclick="setCrmFilterMode('today')">Today</button>
+                <button class="secondary" onclick="setCrmFilterMode('upcoming')">Upcoming</button>
+              </div>
+              <p class="muted" id="crmFilterCount">Showing all contacts.</p>
+            </div>
+
             <div id="crmList" style="margin-top: 14px;"></div>
           </div>
         </div>
@@ -1301,7 +1323,7 @@
       <button class="fab secondary" onclick="quickAddMenu()">Quick add</button>
 
       <div class="footer">
-        Diogo OS v19, monthly dashboard added.
+        Diogo OS v20, CRM search and filters added.
       </div>
     </section>
   </main>
@@ -1331,6 +1353,9 @@
       water_goal_oz: 80,
       step_goal: 10000
     };
+
+    let allCrmContacts = [];
+    let crmFilterMode = "all";
 
     document.getElementById("todayText").textContent = new Date().toLocaleDateString(undefined, {
       weekday: "long",
@@ -2189,13 +2214,74 @@
     async function loadCrm() {
       const { data, error } = await client.from("crm_contacts").select("*").eq("user_id", currentUser.id).order("next_follow_up", { ascending: true, nullsFirst: false });
       if (error) return showError(error.message);
-      const contacts = data || [];
+
+      allCrmContacts = data || [];
+      renderCrmFollowups(allCrmContacts);
+      applyCrmFilters();
+    }
+
+    function setCrmFilterMode(mode) {
+      crmFilterMode = mode;
+      applyCrmFilters();
+    }
+
+    function applyCrmFilters() {
+      const crmList = document.getElementById("crmList");
+      if (!crmList) return;
+
+      const search = (document.getElementById("crmSearch")?.value || "").toLowerCase().trim();
+      const status = document.getElementById("crmFilterStatus")?.value || "";
+      const category = (document.getElementById("crmFilterCategory")?.value || "").toLowerCase().trim();
+      const today = todayISO();
+
+      let contacts = [...allCrmContacts];
+
+      if (search) {
+        contacts = contacts.filter(contact =>
+          String(contact.name || "").toLowerCase().includes(search) ||
+          String(contact.notes || "").toLowerCase().includes(search)
+        );
+      }
+
+      if (status) {
+        contacts = contacts.filter(contact => String(contact.status || "") === status);
+      }
+
+      if (category) {
+        contacts = contacts.filter(contact => String(contact.category || "").toLowerCase().includes(category));
+      }
+
+      if (crmFilterMode === "overdue") {
+        contacts = contacts.filter(contact => contact.next_follow_up && contact.next_follow_up < today);
+      }
+
+      if (crmFilterMode === "today") {
+        contacts = contacts.filter(contact => contact.next_follow_up === today);
+      }
+
+      if (crmFilterMode === "upcoming") {
+        contacts = contacts.filter(contact => contact.next_follow_up && contact.next_follow_up > today);
+      }
+
+      contacts.sort((a, b) => {
+        const aDate = a.next_follow_up || "9999-12-31";
+        const bDate = b.next_follow_up || "9999-12-31";
+        return String(aDate).localeCompare(String(bDate));
+      });
+
+      const count = document.getElementById("crmFilterCount");
+      if (count) {
+        count.textContent = "Showing " + contacts.length + " of " + allCrmContacts.length + " contacts.";
+      }
+
+      renderCrmList(contacts);
+    }
+
+    function renderCrmList(contacts) {
       const crmList = document.getElementById("crmList");
 
-      renderCrmFollowups(contacts);
-
       if (!contacts.length) {
-        crmList.innerHTML = '<p class="muted">No contacts yet.</p>';
+        crmList.innerHTML = '<p class="muted">No contacts match this filter.</p>';
         return;
       }
 
