@@ -1387,15 +1387,32 @@
       </section>
 
       <section id="tab-backup" class="tab-page">
-        <p class="mobile-section-title">Export and import data</p>
+        <p class="mobile-section-title">Advanced backup and restore</p>
         <div class="grid">
           <div class="card full">
             <h2>Backup</h2>
             <p class="muted">
-              Export your Diogo OS data or import a backup file. Import uses restore missing only, so it avoids replacing your current data.
+              Export all data or one section. Keep backups before big updates.
             </p>
 
-            <button onclick="exportBackup()">Export backup</button>
+            <div class="form-grid">
+              <select id="backupSectionSelect" class="input">
+                <option value="all">All sections</option>
+                <option value="tasks">Tasks</option>
+                <option value="notes">Notes</option>
+                <option value="sales_entries">Sales</option>
+                <option value="health_entries">Health</option>
+                <option value="money_goals">Money</option>
+                <option value="crm_contacts">CRM</option>
+                <option value="daily_status">Daily status</option>
+                <option value="user_settings">Settings</option>
+                <option value="daily_planner">Planner</option>
+                <option value="habit_entries">Habits</option>
+                <option value="weekly_reviews">Weekly reviews</option>
+              </select>
+
+              <button onclick="exportSelectedBackup()">Export selected</button>
+            </div>
 
             <div class="section-list" style="margin-top: 14px;">
               <div class="list-item">Tasks <strong id="backupTasks">0</strong></div>
@@ -1424,8 +1441,53 @@
               <p class="muted">No file selected.</p>
             </div>
 
-            <button class="secondary" onclick="importBackupMissingOnly()">Restore missing only</button>
+            <div class="form-grid">
+              <select id="restoreSectionSelect" class="input">
+                <option value="all">Restore all available sections</option>
+                <option value="tasks">Tasks</option>
+                <option value="notes">Notes</option>
+                <option value="sales_entries">Sales</option>
+                <option value="health_entries">Health</option>
+                <option value="money_goals">Money</option>
+                <option value="crm_contacts">CRM</option>
+                <option value="daily_status">Daily status</option>
+                <option value="user_settings">Settings</option>
+                <option value="daily_planner">Planner</option>
+                <option value="habit_entries">Habits</option>
+                <option value="weekly_reviews">Weekly reviews</option>
+              </select>
+
+              <button class="secondary" onclick="importBackupMissingOnly()">Restore missing only</button>
+            </div>
+
             <p class="muted" id="importStatus">Waiting for backup file.</p>
+          </div>
+
+          <div class="card full">
+            <h2>Clear One Section</h2>
+            <p class="muted">
+              This deletes only the section you choose. Export a backup first.
+            </p>
+
+            <div class="form-grid">
+              <select id="clearSectionSelect" class="input">
+                <option value="">Choose section</option>
+                <option value="tasks">Tasks</option>
+                <option value="notes">Notes</option>
+                <option value="sales_entries">Sales</option>
+                <option value="health_entries">Health</option>
+                <option value="money_goals">Money</option>
+                <option value="crm_contacts">CRM</option>
+                <option value="daily_status">Daily status</option>
+                <option value="daily_planner">Planner</option>
+                <option value="habit_entries">Habits</option>
+                <option value="weekly_reviews">Weekly reviews</option>
+              </select>
+
+              <button class="danger" onclick="clearSelectedSection()">Clear selected section</button>
+            </div>
+
+            <p class="muted" id="clearStatus">Nothing cleared.</p>
           </div>
         </div>
       </section>
@@ -1433,7 +1495,7 @@
       <button class="fab secondary" onclick="quickAddMenu()">Quick add</button>
 
       <div class="footer">
-        Diogo OS v22, better charts added.
+        Diogo OS v23, advanced backup tools added.
       </div>
     </section>
   </main>
@@ -3213,13 +3275,8 @@
       }
     }
 
-    async function exportBackup() {
-      if (!currentUser) return;
-
-      const status = document.getElementById("backupStatus");
-      status.textContent = "Preparing backup...";
-
-      const tableNames = [
+    function getBackupTables() {
+      return [
         "tasks",
         "notes",
         "sales_entries",
@@ -3232,12 +3289,27 @@
         "habit_entries",
         "weekly_reviews"
       ];
+    }
+
+    async function exportBackup() {
+      await exportSelectedBackup("all");
+    }
+
+    async function exportSelectedBackup(forcedSection) {
+      if (!currentUser) return;
+
+      const status = document.getElementById("backupStatus");
+      status.textContent = "Preparing backup...";
+
+      const selected = forcedSection || document.getElementById("backupSectionSelect").value || "all";
+      const tableNames = selected === "all" ? getBackupTables() : [selected];
 
       const backup = {
         app: "Diogo OS",
-        version: "v10",
+        version: "v23",
         exported_at: new Date().toISOString(),
         user_email: currentUser.email,
+        section: selected,
         data: {}
       };
 
@@ -3262,14 +3334,15 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       const date = new Date().toISOString().slice(0, 10);
+      const suffix = selected === "all" ? "all" : selected;
       a.href = url;
-      a.download = "diogo-os-backup-" + date + ".json";
+      a.download = "diogo-os-backup-" + suffix + "-" + date + ".json";
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
 
-      status.textContent = "Backup exported.";
+      status.textContent = "Backup exported: " + suffix + ".";
       await loadBackupCounts();
     }
 
@@ -3306,10 +3379,16 @@
           money_goals: (data.money_goals || []).length,
           crm_contacts: (data.crm_contacts || []).length,
           daily_status: (data.daily_status || []).length,
-          user_settings: (data.user_settings || []).length
+          user_settings: (data.user_settings || []).length,
+          daily_planner: (data.daily_planner || []).length,
+          habit_entries: (data.habit_entries || []).length,
+          weekly_reviews: (data.weekly_reviews || []).length
         };
 
         importPreview.innerHTML = `
+          <div class="list-item">Backup version <strong>${escapeHtml(parsed.version || "Unknown")}</strong></div>
+          <div class="list-item">Backup section <strong>${escapeHtml(parsed.section || "all")}</strong></div>
+          <div class="list-item">Exported at <strong>${escapeHtml(parsed.exported_at || "Unknown")}</strong></div>
           <div class="list-item">Tasks <strong>${counts.tasks}</strong></div>
           <div class="list-item">Notes <strong>${counts.notes}</strong></div>
           <div class="list-item">Sales entries <strong>${counts.sales_entries}</strong></div>
@@ -3318,6 +3397,9 @@
           <div class="list-item">CRM contacts <strong>${counts.crm_contacts}</strong></div>
           <div class="list-item">Daily status <strong>${counts.daily_status}</strong></div>
           <div class="list-item">Settings <strong>${counts.user_settings}</strong></div>
+          <div class="list-item">Planner <strong>${counts.daily_planner}</strong></div>
+          <div class="list-item">Habits <strong>${counts.habit_entries}</strong></div>
+          <div class="list-item">Weekly reviews <strong>${counts.weekly_reviews}</strong></div>
         `;
 
         importStatus.textContent = "Backup ready to restore missing records.";
@@ -3336,19 +3418,16 @@
 
       importStatus.textContent = "Restoring missing records...";
 
-      const tableNames = [
-        "tasks",
-        "notes",
-        "sales_entries",
-        "health_entries",
-        "money_goals",
-        "crm_contacts",
-        "daily_status",
-        "user_settings",
-        "daily_planner",
-        "habit_entries",
-        "weekly_reviews"
-      ];
+      const selected = document.getElementById("restoreSectionSelect").value || "all";
+      const availableTables = Object.keys(pendingBackup.data || {});
+      const tableNames = selected === "all"
+        ? getBackupTables().filter(table => availableTables.includes(table))
+        : [selected].filter(table => availableTables.includes(table));
+
+      if (!tableNames.length) {
+        importStatus.textContent = "No matching section found in this backup.";
+        return;
+      }
 
       let inserted = 0;
       let skipped = 0;
@@ -3405,6 +3484,35 @@
       }
 
       importStatus.textContent = "Restore done. Added " + inserted + " records. Skipped " + skipped + ".";
+      await loadAll();
+    }
+
+    async function clearSelectedSection() {
+      const table = document.getElementById("clearSectionSelect").value;
+      const clearStatus = document.getElementById("clearStatus");
+
+      if (!table) {
+        clearStatus.textContent = "Choose a section first.";
+        return;
+      }
+
+      const confirmText = prompt("Type CLEAR to delete this section: " + table);
+      if (confirmText !== "CLEAR") {
+        clearStatus.textContent = "Clear canceled.";
+        return;
+      }
+
+      const { error } = await client
+        .from(table)
+        .delete()
+        .eq("user_id", currentUser.id);
+
+      if (error) {
+        clearStatus.textContent = "Clear failed: " + error.message;
+        return;
+      }
+
+      clearStatus.textContent = "Cleared section: " + table + ".";
       await loadAll();
     }
 
