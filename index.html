@@ -740,6 +740,7 @@
         <button class="tab-btn" onclick="openTab('settings', this)">Settings</button>
         <button class="tab-btn" onclick="openTab('habits', this)">Habits</button>
         <button class="tab-btn" onclick="openTab('planner', this)">Planner</button>
+        <button class="tab-btn" onclick="openTab('review', this)">Review</button>
         <button class="tab-btn" onclick="openTab('backup', this)">Backup</button>
         <button class="tab-btn" onclick="toggleMobileTabs(this)">More</button>
       </nav>
@@ -1141,6 +1142,56 @@
         </div>
       </section>
 
+      <section id="tab-review" class="tab-page">
+        <p class="mobile-section-title">Weekly review and next week focus</p>
+        <div class="grid">
+          <div class="card full">
+            <h2>Weekly Review</h2>
+            <p class="muted" id="reviewWeekText">This week</p>
+
+            <div class="stats">
+              <div class="stat"><strong id="reviewIncome">$0</strong><span class="muted">Income</span></div>
+              <div class="stat"><strong id="reviewDials">0</strong><span class="muted">Dials</span></div>
+              <div class="stat"><strong id="reviewWorkouts">0</strong><span class="muted">Workouts</span></div>
+              <div class="stat"><strong id="reviewHabits">0%</strong><span class="muted">Habits</span></div>
+            </div>
+          </div>
+
+          <div class="card half">
+            <h2>Sales Summary</h2>
+            <div class="section-list">
+              <div class="list-item">Best sales day <strong id="reviewBestDay">None</strong></div>
+              <div class="list-item">Worst sales day <strong id="reviewWorstDay">None</strong></div>
+              <div class="list-item">Contacts <strong id="reviewContacts">0</strong></div>
+              <div class="list-item">Appointments <strong id="reviewAppointments">0</strong></div>
+              <div class="list-item">Presentations <strong id="reviewPresentations">0</strong></div>
+              <div class="list-item">Applications <strong id="reviewApplications">0</strong></div>
+              <div class="list-item">Closed sales <strong id="reviewClosed">0</strong></div>
+            </div>
+          </div>
+
+          <div class="card half">
+            <h2>Life Summary</h2>
+            <div class="section-list">
+              <div class="list-item">Average sleep <strong id="reviewAvgSleep">0h</strong></div>
+              <div class="list-item">Average steps <strong id="reviewAvgSteps">0</strong></div>
+              <div class="list-item">Water total <strong id="reviewWater">0 oz</strong></div>
+              <div class="list-item">Planner complete <strong id="reviewPlanner">0%</strong></div>
+              <div class="list-item">CRM follow-ups <strong id="reviewCrm">0</strong></div>
+            </div>
+          </div>
+
+          <div class="card full">
+            <h2>Write Review</h2>
+            <textarea id="reviewWins" placeholder="Wins this week"></textarea>
+            <textarea id="reviewNeedsWork" placeholder="What needs work"></textarea>
+            <textarea id="reviewNextFocus" placeholder="Next week focus"></textarea>
+            <button onclick="saveWeeklyReview()">Save weekly review</button>
+            <p class="muted" id="reviewStatus">Ready.</p>
+          </div>
+        </div>
+      </section>
+
       <section id="tab-backup" class="tab-page">
         <p class="mobile-section-title">Export and import data</p>
         <div class="grid">
@@ -1161,6 +1212,7 @@
               <div class="list-item">CRM contacts <strong id="backupCrm">0</strong></div>
               <div class="list-item">Planner blocks <strong id="backupPlanner">0</strong></div>
               <div class="list-item">Habit entries <strong id="backupHabits">0</strong></div>
+              <div class="list-item">Weekly reviews <strong id="backupReviews">0</strong></div>
             </div>
 
             <p class="muted" id="backupStatus">Ready.</p>
@@ -1187,7 +1239,7 @@
       <button class="fab secondary" onclick="quickAddMenu()">Quick add</button>
 
       <div class="footer">
-        Diogo OS v17, iPhone layout cleanup added.
+        Diogo OS v18, weekly review added.
       </div>
     </section>
   </main>
@@ -1318,6 +1370,7 @@
         loadMoneyGoals(),
         loadPlannerBlocks(),
         loadHabits(),
+        loadWeeklyReview(),
         loadBackupCounts(),
         loadCrm(),
         loadDailyStatus(),
@@ -2458,6 +2511,148 @@
       await loadPlannerBlocks();
     }
 
+    async function loadWeeklyReview() {
+      const weekStart = startOfWeekISO();
+
+      document.getElementById("reviewWeekText").textContent = "Week of " + weekStart;
+
+      const [
+        { data: salesRows, error: salesError },
+        { data: healthRows, error: healthError },
+        { data: habitRows, error: habitError },
+        { data: plannerRows, error: plannerError },
+        { data: crmRows, error: crmError },
+        { data: reviewRow, error: reviewError }
+      ] = await Promise.all([
+        client.from("sales_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", weekStart),
+        client.from("health_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", weekStart),
+        client.from("habit_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", weekStart),
+        client.from("daily_planner").select("*").eq("user_id", currentUser.id).gte("entry_date", weekStart),
+        client.from("crm_contacts").select("*").eq("user_id", currentUser.id),
+        client.from("weekly_reviews").select("*").eq("user_id", currentUser.id).eq("week_start", weekStart).maybeSingle()
+      ]);
+
+      const firstError = salesError || healthError || habitError || plannerError || crmError || reviewError;
+      if (firstError) return showError(firstError.message);
+
+      const sales = salesRows || [];
+      const health = healthRows || [];
+      const habits = habitRows || [];
+      const planner = plannerRows || [];
+      const crm = crmRows || [];
+
+      const salesTotals = sales.reduce((acc, row) => {
+        acc.dials += Number(row.dials || 0);
+        acc.contacts += Number(row.contacts || 0);
+        acc.appointments += Number(row.appointments || 0);
+        acc.presentations += Number(row.presentations || 0);
+        acc.applications += Number(row.applications || 0);
+        acc.closed += Number(row.closed_sales || 0);
+        acc.income += Number(row.income || 0);
+        return acc;
+      }, { dials: 0, contacts: 0, appointments: 0, presentations: 0, applications: 0, closed: 0, income: 0 });
+
+      const bestDay = sales.length
+        ? [...sales].sort((a, b) => Number(b.income || 0) - Number(a.income || 0))[0]
+        : null;
+
+      const worstDay = sales.length
+        ? [...sales].sort((a, b) => Number(a.income || 0) - Number(b.income || 0))[0]
+        : null;
+
+      const sleepRows = health.filter(row => Number(row.sleep_hours || 0) > 0);
+      const stepRows = health.filter(row => Number(row.steps || 0) > 0);
+      const waterTotal = health.reduce((sum, row) => sum + Number(row.water_oz || 0), 0);
+      const workouts = health.filter(row => (row.workout || "").trim()).length;
+
+      const avgSleep = sleepRows.length
+        ? sleepRows.reduce((sum, row) => sum + Number(row.sleep_hours || 0), 0) / sleepRows.length
+        : 0;
+
+      const avgSteps = stepRows.length
+        ? Math.round(stepRows.reduce((sum, row) => sum + Number(row.steps || 0), 0) / stepRows.length)
+        : 0;
+
+      const habitPercent = habits.length
+        ? Math.round((habits.filter(row => row.completed).length / habits.length) * 100)
+        : 0;
+
+      const plannerPercent = planner.length
+        ? Math.round((planner.filter(row => row.completed).length / planner.length) * 100)
+        : 0;
+
+      const today = todayISO();
+      const crmDueOrOverdue = crm.filter(row => row.next_follow_up && row.next_follow_up <= today).length;
+
+      document.getElementById("reviewIncome").textContent = "$" + salesTotals.income.toLocaleString();
+      document.getElementById("reviewDials").textContent = salesTotals.dials;
+      document.getElementById("reviewWorkouts").textContent = workouts;
+      document.getElementById("reviewHabits").textContent = habitPercent + "%";
+
+      document.getElementById("reviewBestDay").textContent = bestDay ? bestDay.entry_date + " $" + Number(bestDay.income || 0).toLocaleString() : "None";
+      document.getElementById("reviewWorstDay").textContent = worstDay ? worstDay.entry_date + " $" + Number(worstDay.income || 0).toLocaleString() : "None";
+      document.getElementById("reviewContacts").textContent = salesTotals.contacts;
+      document.getElementById("reviewAppointments").textContent = salesTotals.appointments;
+      document.getElementById("reviewPresentations").textContent = salesTotals.presentations;
+      document.getElementById("reviewApplications").textContent = salesTotals.applications;
+      document.getElementById("reviewClosed").textContent = salesTotals.closed;
+
+      document.getElementById("reviewAvgSleep").textContent = avgSleep ? avgSleep.toFixed(1) + "h" : "0h";
+      document.getElementById("reviewAvgSteps").textContent = avgSteps.toLocaleString();
+      document.getElementById("reviewWater").textContent = waterTotal + " oz";
+      document.getElementById("reviewPlanner").textContent = plannerPercent + "%";
+      document.getElementById("reviewCrm").textContent = crmDueOrOverdue;
+
+      if (reviewRow) {
+        document.getElementById("reviewWins").value = reviewRow.wins || "";
+        document.getElementById("reviewNeedsWork").value = reviewRow.needs_work || "";
+        document.getElementById("reviewNextFocus").value = reviewRow.next_week_focus || "";
+        document.getElementById("reviewStatus").textContent = "Weekly review loaded.";
+      } else {
+        document.getElementById("reviewWins").value = "";
+        document.getElementById("reviewNeedsWork").value = "";
+        document.getElementById("reviewNextFocus").value = "";
+        document.getElementById("reviewStatus").textContent = "No written review saved yet.";
+      }
+    }
+
+    async function saveWeeklyReview() {
+      const weekStart = startOfWeekISO();
+
+      const payload = {
+        user_id: currentUser.id,
+        week_start: weekStart,
+        wins: document.getElementById("reviewWins").value.trim(),
+        needs_work: document.getElementById("reviewNeedsWork").value.trim(),
+        next_week_focus: document.getElementById("reviewNextFocus").value.trim(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data: existing, error: findError } = await client
+        .from("weekly_reviews")
+        .select("id")
+        .eq("user_id", currentUser.id)
+        .eq("week_start", weekStart)
+        .maybeSingle();
+
+      if (findError) return showError(findError.message);
+
+      let error;
+
+      if (existing) {
+        const result = await client.from("weekly_reviews").update(payload).eq("id", existing.id);
+        error = result.error;
+      } else {
+        const result = await client.from("weekly_reviews").insert(payload);
+        error = result.error;
+      }
+
+      if (error) return showError(error.message);
+
+      document.getElementById("reviewStatus").textContent = "Weekly review saved.";
+      await loadWeeklyReview();
+    }
+
     async function loadBackupCounts() {
       if (!currentUser) return;
 
@@ -2469,7 +2664,8 @@
         ["money_goals", "backupMoney"],
         ["crm_contacts", "backupCrm"],
         ["daily_planner", "backupPlanner"],
-        ["habit_entries", "backupHabits"]
+        ["habit_entries", "backupHabits"],
+        ["weekly_reviews", "backupReviews"]
       ];
 
       for (const [table, elementId] of tables) {
@@ -2500,7 +2696,8 @@
         "daily_status",
         "user_settings",
         "daily_planner",
-        "habit_entries"
+        "habit_entries",
+        "weekly_reviews"
       ];
 
       const backup = {
@@ -2616,7 +2813,8 @@
         "daily_status",
         "user_settings",
         "daily_planner",
-        "habit_entries"
+        "habit_entries",
+        "weekly_reviews"
       ];
 
       let inserted = 0;
@@ -2678,7 +2876,7 @@
     }
 
     function startRealtime() {
-      const tables = ["tasks", "notes", "sales_entries", "health_entries", "money_goals", "crm_contacts", "daily_status", "user_settings", "daily_planner", "habit_entries"];
+      const tables = ["tasks", "notes", "sales_entries", "health_entries", "money_goals", "crm_contacts", "daily_status", "user_settings", "daily_planner", "habit_entries", "weekly_reviews"];
       tables.forEach(table => {
         client.channel(table + "-channel").on("postgres_changes", { event: "*", schema: "public", table }, () => loadAll()).subscribe();
       });
