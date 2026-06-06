@@ -1003,7 +1003,20 @@
         <p class="mobile-section-title">Money goals and progress</p>
         <div class="grid">
           <div class="card full">
-            <h2>Money Goals</h2>
+            <h2>Money Dashboard</h2>
+            <div class="stats">
+              <div class="stat"><strong id="moneyTotalSaved">$0</strong><span class="muted">Total saved</span></div>
+              <div class="stat"><strong id="moneyTotalTarget">$0</strong><span class="muted">Total target</span></div>
+              <div class="stat"><strong id="moneyTotalLeft">$0</strong><span class="muted">Amount left</span></div>
+              <div class="stat"><strong id="moneyOverallPercent">0%</strong><span class="muted">Overall progress</span></div>
+            </div>
+
+            <div class="progress"><span id="moneyOverallProgress"></span></div>
+            <p class="muted" id="moneyOverallText">$0 saved of $0 total target</p>
+          </div>
+
+          <div class="card full">
+            <h2>Add Money Goal</h2>
             <input id="moneyName" class="input" placeholder="Goal name, example BMW M3" />
             <div class="form-grid">
               <input id="moneyTarget" class="input" type="number" placeholder="Target amount" />
@@ -1323,7 +1336,7 @@
       <button class="fab secondary" onclick="quickAddMenu()">Quick add</button>
 
       <div class="footer">
-        Diogo OS v20, CRM search and filters added.
+        Diogo OS v21, money dashboard upgraded.
       </div>
     </section>
   </main>
@@ -2136,24 +2149,37 @@
       const { data, error } = await client.from("money_goals").select("*").eq("user_id", currentUser.id).order("created_at", { ascending: false });
       if (error) return showError(error.message);
       const moneyList = document.getElementById("moneyList");
+      const goals = data || [];
 
-      if (!data.length) {
+      updateMoneyDashboard(goals);
+
+      if (!goals.length) {
         moneyList.innerHTML = '<p class="muted">No money goals yet.</p>';
         return;
       }
 
-      moneyList.innerHTML = data.map(goal => {
+      moneyList.innerHTML = goals.map(goal => {
         const target = Number(goal.target_amount || 0);
         const current = Number(goal.current_amount || 0);
         const percent = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
+        const left = Math.max(0, target - current);
+
         return `
           <div class="list-item">
             <span>${escapeHtml(goal.goal_name)}</span>
             <strong>$${current.toLocaleString()} / $${target.toLocaleString()}</strong>
             <div style="clear:both;"></div>
             <div class="progress"><span style="width:${percent}%;"></span></div>
-            <p class="muted">${percent}% complete</p>
+            <p class="muted">${percent}% complete · $${left.toLocaleString()} left</p>
+
+            <div class="form-grid" style="margin-top: 10px;">
+              <input id="deposit-${goal.id}" class="input" type="number" placeholder="Deposit amount" />
+              <input id="withdraw-${goal.id}" class="input" type="number" placeholder="Withdraw amount" />
+            </div>
+
             <div class="actions">
+              <button class="mini-btn secondary" onclick="depositMoneyGoal('${goal.id}', ${current})">Deposit</button>
+              <button class="mini-btn secondary" onclick="withdrawMoneyGoal('${goal.id}', ${current})">Withdraw</button>
               <button class="mini-btn secondary" onclick="addMoneyAmount('${goal.id}', ${current}, 50)">+$50</button>
               <button class="mini-btn secondary" onclick="addMoneyAmount('${goal.id}', ${current}, 100)">+$100</button>
               <button class="mini-btn secondary" onclick="addMoneyAmount('${goal.id}', ${current}, 500)">+$500</button>
@@ -2165,10 +2191,66 @@
       }).join("");
     }
 
+    function updateMoneyDashboard(goals) {
+      const totalSaved = goals.reduce((sum, goal) => sum + Number(goal.current_amount || 0), 0);
+      const totalTarget = goals.reduce((sum, goal) => sum + Number(goal.target_amount || 0), 0);
+      const totalLeft = Math.max(0, totalTarget - totalSaved);
+      const percent = totalTarget > 0 ? Math.min(100, Math.round((totalSaved / totalTarget) * 100)) : 0;
+
+      const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      };
+
+      setText("moneyTotalSaved", "$" + totalSaved.toLocaleString());
+      setText("moneyTotalTarget", "$" + totalTarget.toLocaleString());
+      setText("moneyTotalLeft", "$" + totalLeft.toLocaleString());
+      setText("moneyOverallPercent", percent + "%");
+      setText("moneyOverallText", "$" + totalSaved.toLocaleString() + " saved of $" + totalTarget.toLocaleString() + " total target");
+
+      const bar = document.getElementById("moneyOverallProgress");
+      if (bar) bar.style.width = percent + "%";
+    }
+
+    async function depositMoneyGoal(id, current) {
+      const input = document.getElementById("deposit-" + id);
+      const amount = Number(input?.value || 0);
+      if (amount <= 0) return;
+
+      const { error } = await client
+        .from("money_goals")
+        .update({ current_amount: current + amount, updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("user_id", currentUser.id);
+
+      if (error) return showError(error.message);
+      await loadMoneyGoals();
+      await loadMonthlyDashboard();
+    }
+
+    async function withdrawMoneyGoal(id, current) {
+      const input = document.getElementById("withdraw-" + id);
+      const amount = Number(input?.value || 0);
+      if (amount <= 0) return;
+
+      const newAmount = Math.max(0, current - amount);
+
+      const { error } = await client
+        .from("money_goals")
+        .update({ current_amount: newAmount, updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("user_id", currentUser.id);
+
+      if (error) return showError(error.message);
+      await loadMoneyGoals();
+      await loadMonthlyDashboard();
+    }
+
     async function addMoneyAmount(id, current, amount) {
       const { error } = await client.from("money_goals").update({ current_amount: current + amount, updated_at: new Date().toISOString() }).eq("id", id).eq("user_id", currentUser.id);
       if (error) return showError(error.message);
       await loadMoneyGoals();
+      await loadMonthlyDashboard();
     }
 
     async function editMoneyGoal(id, oldName, oldTarget, oldCurrent) {
@@ -2188,6 +2270,7 @@
 
       if (error) return showError(error.message);
       await loadMoneyGoals();
+      await loadMonthlyDashboard();
     }
 
     async function addCrm() {
