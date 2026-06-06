@@ -484,6 +484,30 @@
       border: 1px solid rgba(255, 255, 255, 0.09);
     }
 
+    .habit-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .habit-card {
+      padding: 14px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .habit-card input {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
     .crm-dashboard {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -546,6 +570,7 @@
       .history-grid { grid-template-columns: 1fr; }
       .health-history-grid { grid-template-columns: 1fr; }
       .score-grid { grid-template-columns: 1fr; }
+      .habit-grid { grid-template-columns: 1fr; }
       .crm-dashboard { grid-template-columns: 1fr; }
 
       .mobile-app-banner {
@@ -643,6 +668,7 @@
         <button class="tab-btn" onclick="openTab('crm', this)">CRM</button>
         <button class="tab-btn" onclick="openTab('notes', this)">Notes</button>
         <button class="tab-btn" onclick="openTab('settings', this)">Settings</button>
+        <button class="tab-btn" onclick="openTab('habits', this)">Habits</button>
         <button class="tab-btn" onclick="openTab('planner', this)">Planner</button>
         <button class="tab-btn" onclick="openTab('backup', this)">Backup</button>
         <button class="tab-btn" onclick="toggleMobileTabs(this)">More</button>
@@ -728,6 +754,7 @@
               <div class="list-item">Workout <strong id="homeWorkout">Not logged</strong></div>
               <div class="list-item">Weekly income <strong id="homeWeeklyIncome">$0</strong></div>
               <div class="list-item">Planner blocks <strong id="homePlannerCount">0</strong></div>
+              <div class="list-item">Habits done <strong id="homeHabitCount">0</strong></div>
             </div>
           </div>
         </div>
@@ -948,6 +975,34 @@
         </div>
       </section>
 
+      <section id="tab-habits" class="tab-page">
+        <div class="grid">
+          <div class="card full">
+            <h2>Habit Tracker</h2>
+            <p class="muted">Build the daily reps that move everything forward.</p>
+
+            <div class="stats">
+              <div class="stat"><strong id="habitScore">0%</strong><span class="muted">Today complete</span></div>
+              <div class="stat"><strong id="habitDoneCount">0</strong><span class="muted">Done today</span></div>
+              <div class="stat"><strong id="habitTotalCount">0</strong><span class="muted">Total habits</span></div>
+              <div class="stat"><strong id="weeklyHabitScore">0%</strong><span class="muted">Weekly score</span></div>
+            </div>
+
+            <div class="progress"><span id="habitProgress"></span></div>
+            <p class="muted" id="habitProgressText">0 of 0 habits done today</p>
+
+            <div id="habitList" class="habit-grid"></div>
+          </div>
+
+          <div class="card full">
+            <h2>Add Custom Habit</h2>
+            <input id="habitInput" class="input" placeholder="Habit name, example Read 10 pages" />
+            <button onclick="addHabit()">Add habit</button>
+            <button class="secondary" onclick="createDefaultHabits()">Add default habits</button>
+          </div>
+        </div>
+      </section>
+
       <section id="tab-planner" class="tab-page">
         <div class="grid">
           <div class="card full">
@@ -991,6 +1046,7 @@
               <div class="list-item">Money goals <strong id="backupMoney">0</strong></div>
               <div class="list-item">CRM contacts <strong id="backupCrm">0</strong></div>
               <div class="list-item">Planner blocks <strong id="backupPlanner">0</strong></div>
+              <div class="list-item">Habit entries <strong id="backupHabits">0</strong></div>
             </div>
 
             <p class="muted" id="backupStatus">Ready.</p>
@@ -1017,7 +1073,7 @@
       <button class="fab secondary" onclick="quickAddMenu()">Quick add</button>
 
       <div class="footer">
-        Diogo OS v14, daily planner added.
+        Diogo OS v15, habit tracker added.
       </div>
     </section>
   </main>
@@ -1141,6 +1197,7 @@
         loadStreaks(),
         loadMoneyGoals(),
         loadPlannerBlocks(),
+        loadHabits(),
         loadBackupCounts(),
         loadCrm(),
         loadDailyStatus(),
@@ -1971,6 +2028,161 @@
       await callback();
     }
 
+    const defaultHabits = [
+      "Dials done",
+      "Workout done",
+      "Water goal hit",
+      "Sleep logged",
+      "Planner completed",
+      "Follow-ups done",
+      "Learned something",
+      "Prayer or reflection"
+    ];
+
+    async function createDefaultHabits() {
+      const { data: existing } = await client
+        .from("habit_entries")
+        .select("habit_name")
+        .eq("user_id", currentUser.id)
+        .eq("entry_date", todayISO());
+
+      const existingNames = (existing || []).map(item => item.habit_name);
+
+      const rows = defaultHabits
+        .filter(name => !existingNames.includes(name))
+        .map(name => ({
+          user_id: currentUser.id,
+          entry_date: todayISO(),
+          habit_name: name,
+          completed: false
+        }));
+
+      if (!rows.length) {
+        await loadHabits();
+        return;
+      }
+
+      const { error } = await client.from("habit_entries").insert(rows);
+      if (error) return showError(error.message);
+
+      await loadHabits();
+    }
+
+    async function addHabit() {
+      const input = document.getElementById("habitInput");
+      const habit_name = input.value.trim();
+
+      if (!habit_name) return;
+
+      const { error } = await client.from("habit_entries").insert({
+        user_id: currentUser.id,
+        entry_date: todayISO(),
+        habit_name,
+        completed: false
+      });
+
+      if (error) return showError(error.message);
+
+      input.value = "";
+      await loadHabits();
+    }
+
+    async function loadHabits() {
+      const { data, error } = await client
+        .from("habit_entries")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .eq("entry_date", todayISO())
+        .order("created_at", { ascending: true });
+
+      if (error) return showError(error.message);
+
+      let rows = data || [];
+
+      if (!rows.length) {
+        const habitList = document.getElementById("habitList");
+        if (habitList) {
+          habitList.innerHTML = '<p class="muted">No habits yet. Add defaults or create your own.</p>';
+        }
+        updateHabitStats([]);
+        await loadWeeklyHabitScore();
+        return;
+      }
+
+      renderHabits(rows);
+      updateHabitStats(rows);
+      await loadWeeklyHabitScore();
+    }
+
+    function renderHabits(rows) {
+      const habitList = document.getElementById("habitList");
+      if (!habitList) return;
+
+      habitList.innerHTML = rows.map(habit => `
+        <div class="habit-card">
+          <div>
+            <strong>${escapeHtml(habit.habit_name)}</strong>
+            <p class="muted">${habit.completed ? "Done" : "Not done"}</p>
+          </div>
+          <div class="actions">
+            <input type="checkbox" ${habit.completed ? "checked" : ""} onchange="toggleHabit('${habit.id}', ${!habit.completed})" />
+            <button class="mini-btn secondary" onclick="deleteRow('habit_entries', '${habit.id}', loadHabits)">Delete</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function updateHabitStats(rows) {
+      const total = rows.length;
+      const done = rows.filter(row => row.completed).length;
+      const percent = total ? Math.round((done / total) * 100) : 0;
+
+      const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      };
+
+      setText("habitScore", percent + "%");
+      setText("habitDoneCount", done);
+      setText("habitTotalCount", total);
+      setText("habitProgressText", done + " of " + total + " habits done today");
+      setText("homeHabitCount", done + "/" + total);
+
+      const progress = document.getElementById("habitProgress");
+      if (progress) progress.style.width = percent + "%";
+    }
+
+    async function toggleHabit(id, completed) {
+      const { error } = await client
+        .from("habit_entries")
+        .update({ completed, updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("user_id", currentUser.id);
+
+      if (error) return showError(error.message);
+      await loadHabits();
+      await loadDailyScore();
+      await loadStreaks();
+    }
+
+    async function loadWeeklyHabitScore() {
+      const { data, error } = await client
+        .from("habit_entries")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .gte("entry_date", startOfWeekISO());
+
+      if (error) return showError(error.message);
+
+      const rows = data || [];
+      const total = rows.length;
+      const done = rows.filter(row => row.completed).length;
+      const percent = total ? Math.round((done / total) * 100) : 0;
+
+      const weekly = document.getElementById("weeklyHabitScore");
+      if (weekly) weekly.textContent = percent + "%";
+    }
+
     async function addPlannerBlock() {
       const block_time = document.getElementById("plannerTime").value.trim();
       const title = document.getElementById("plannerTitle").value.trim();
@@ -2099,7 +2311,8 @@
         ["health_entries", "backupHealth"],
         ["money_goals", "backupMoney"],
         ["crm_contacts", "backupCrm"],
-        ["daily_planner", "backupPlanner"]
+        ["daily_planner", "backupPlanner"],
+        ["habit_entries", "backupHabits"]
       ];
 
       for (const [table, elementId] of tables) {
@@ -2129,7 +2342,8 @@
         "crm_contacts",
         "daily_status",
         "user_settings",
-        "daily_planner"
+        "daily_planner",
+        "habit_entries"
       ];
 
       const backup = {
@@ -2244,7 +2458,8 @@
         "crm_contacts",
         "daily_status",
         "user_settings",
-        "daily_planner"
+        "daily_planner",
+        "habit_entries"
       ];
 
       let inserted = 0;
@@ -2306,7 +2521,7 @@
     }
 
     function startRealtime() {
-      const tables = ["tasks", "notes", "sales_entries", "health_entries", "money_goals", "crm_contacts", "daily_status", "user_settings", "daily_planner"];
+      const tables = ["tasks", "notes", "sales_entries", "health_entries", "money_goals", "crm_contacts", "daily_status", "user_settings", "daily_planner", "habit_entries"];
       tables.forEach(table => {
         client.channel(table + "-channel").on("postgres_changes", { event: "*", schema: "public", table }, () => loadAll()).subscribe();
       });
@@ -2319,7 +2534,7 @@
     }
 
     function quickAddMenu() {
-      const choice = prompt("Quick add: task, note, planner, dials, water, workout");
+      const choice = prompt("Quick add: task, note, planner, habit, dials, water, workout");
       if (!choice) return;
 
       const normalized = choice.toLowerCase().trim();
@@ -2352,6 +2567,14 @@
         document.getElementById("plannerTime").value = time;
         document.getElementById("plannerNotes").value = notes;
         addPlannerBlock();
+        return;
+      }
+
+      if (normalized === "habit") {
+        const name = prompt("Habit name");
+        if (!name) return;
+        document.getElementById("habitInput").value = name;
+        addHabit();
         return;
       }
 
