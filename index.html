@@ -82,6 +82,10 @@
       letter-spacing: -0.03em;
     }
 
+    .mobile-section-title {
+      display: none;
+    }
+
     .topbar {
       display: flex;
       align-items: flex-start;
@@ -586,6 +590,14 @@
         grid-template-columns: repeat(4, 1fr);
         border-radius: 24px;
         box-shadow: 0 18px 70px rgba(0, 0, 0, 0.45);
+        max-height: 62px;
+        overflow: hidden;
+        transition: max-height 0.18s ease;
+      }
+
+      .tabs.show-all {
+        grid-template-columns: repeat(3, 1fr);
+        max-height: 210px;
       }
 
       .tab-btn {
@@ -593,12 +605,16 @@
         padding: 10px 6px;
       }
 
-      .tab-btn:nth-child(n+5) {
+      .tab-btn:nth-child(n+4):not(:last-child) {
         display: none;
       }
 
       .tabs.show-all .tab-btn {
-        display: block;
+        display: block !important;
+      }
+
+      .tabs.show-all .tab-btn:last-child {
+        grid-column: span 3;
       }
 
       .app {
@@ -615,6 +631,60 @@
       .actions { width: 100%; }
       .actions button, .pill { flex: 1; text-align: center; }
       .hero-title { font-size: 30px; }
+
+      .mobile-section-title {
+        display: block;
+        margin: 4px 0 12px;
+        color: rgba(245, 245, 247, 0.5);
+        font-size: 13px;
+      }
+
+      .quick-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .fab {
+        right: 14px;
+        bottom: calc(82px + env(safe-area-inset-bottom));
+        padding: 12px 14px;
+      }
+
+      .brand h1 {
+        font-size: 44px;
+      }
+
+      .topbar .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .topbar .pill {
+        grid-column: span 2;
+      }
+
+      .row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .row .actions {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .habit-card {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .habit-card .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .bar-row {
+        grid-template-columns: 64px 1fr 58px;
+      }
     }
   </style>
 </head>
@@ -644,7 +714,7 @@
     <section id="dashboardView" class="hidden">
       <div class="mobile-app-banner">
         <strong>Diogo OS on iPhone</strong>
-        <span class="muted">Open in Safari, tap Share, then Add to Home Screen. Use More to show all tabs.</span>
+        <span class="muted">Tap More to show all tabs. Use Quick add for fast logging.</span>
       </div>
 
       <div class="topbar">
@@ -763,6 +833,7 @@
       </section>
 
       <section id="tab-sales" class="tab-page">
+        <p class="mobile-section-title">Sales, weekly income, and conversions</p>
         <div class="grid">
           <div class="card full">
             <h2>Weekly Sales Command</h2>
@@ -822,6 +893,7 @@
       </section>
 
       <section id="tab-health" class="tab-page">
+        <p class="mobile-section-title">Health, Apple Watch, charts, and streaks</p>
         <div class="grid">
           <div class="card full">
             <h2>Weekly Health Command</h2>
@@ -926,6 +998,7 @@
       </section>
 
       <section id="tab-money" class="tab-page">
+        <p class="mobile-section-title">Money goals and progress</p>
         <div class="grid">
           <div class="card full">
             <h2>Money Goals</h2>
@@ -941,6 +1014,7 @@
       </section>
 
       <section id="tab-crm" class="tab-page">
+        <p class="mobile-section-title">CRM follow-ups and contacts</p>
         <div class="grid">
           <div class="card full">
             <h2>CRM Follow-ups</h2>
@@ -982,6 +1056,7 @@
       </section>
 
       <section id="tab-notes" class="tab-page">
+        <p class="mobile-section-title">Notes and quick thoughts</p>
         <div class="grid">
           <div class="card full">
             <h2>Notes</h2>
@@ -994,6 +1069,7 @@
       </section>
 
       <section id="tab-settings" class="tab-page">
+        <p class="mobile-section-title">Goals and dashboard settings</p>
         <div class="grid">
           <div class="card full">
             <h2>Settings</h2>
@@ -1011,6 +1087,7 @@
       </section>
 
       <section id="tab-habits" class="tab-page">
+        <p class="mobile-section-title">Daily habit checkboxes</p>
         <div class="grid">
           <div class="card full">
             <h2>Habit Tracker</h2>
@@ -1039,6 +1116,7 @@
       </section>
 
       <section id="tab-planner" class="tab-page">
+        <p class="mobile-section-title">Daily time blocks</p>
         <div class="grid">
           <div class="card full">
             <h2>Daily Planner</h2>
@@ -1064,6 +1142,7 @@
       </section>
 
       <section id="tab-backup" class="tab-page">
+        <p class="mobile-section-title">Export and import data</p>
         <div class="grid">
           <div class="card full">
             <h2>Backup</h2>
@@ -1108,7 +1187,7 @@
       <button class="fab secondary" onclick="quickAddMenu()">Quick add</button>
 
       <div class="footer">
-        Diogo OS v16, Apple Watch manual logging added.
+        Diogo OS v17, iPhone layout cleanup added.
       </div>
     </section>
   </main>
@@ -1152,6 +1231,12 @@
       document.querySelectorAll(".tab-btn").forEach(tab => tab.classList.remove("active"));
       document.getElementById("tab-" + name).classList.add("active");
       btn.classList.add("active");
+      const tabs = document.querySelector(".tabs");
+      if (tabs && tabs.classList.contains("show-all") && btn.textContent !== "More" && btn.textContent !== "Less") {
+        tabs.classList.remove("show-all");
+        const moreBtn = tabs.querySelector(".tab-btn:last-child");
+        if (moreBtn) moreBtn.textContent = "More";
+      }
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -2606,12 +2691,22 @@
     }
 
     function quickAddMenu() {
-      const choice = prompt("Quick add: task, note, planner, habit, dials, water, workout");
+      const choice = prompt("Quick add:\n1 task\n2 note\n3 planner\n4 habit\n5 dials\n6 water\n7 workout");
       if (!choice) return;
 
       const normalized = choice.toLowerCase().trim();
+      const mapped = {
+        "1": "task",
+        "2": "note",
+        "3": "planner",
+        "4": "habit",
+        "5": "dials",
+        "6": "water",
+        "7": "workout"
+      };
+      const action = mapped[normalized] || normalized;
 
-      if (normalized === "task") {
+      if (action === "task") {
         const title = prompt("Task");
         if (title) {
           document.getElementById("taskInput").value = title;
@@ -2620,7 +2715,7 @@
         return;
       }
 
-      if (normalized === "note") {
+      if (action === "note") {
         const title = prompt("Note title");
         if (!title) return;
         const content = prompt("Note content") || "";
@@ -2630,7 +2725,7 @@
         return;
       }
 
-      if (normalized === "planner") {
+      if (action === "planner") {
         const title = prompt("Planner title");
         if (!title) return;
         const time = prompt("Time block") || "";
@@ -2642,7 +2737,7 @@
         return;
       }
 
-      if (normalized === "habit") {
+      if (action === "habit") {
         const name = prompt("Habit name");
         if (!name) return;
         document.getElementById("habitInput").value = name;
@@ -2650,19 +2745,19 @@
         return;
       }
 
-      if (normalized === "dials") {
+      if (action === "dials") {
         const amount = Number(prompt("How many dials?") || 0);
         if (amount > 0) quickDials(amount);
         return;
       }
 
-      if (normalized === "water") {
+      if (action === "water") {
         const amount = Number(prompt("How many oz?") || 0);
         if (amount > 0) quickWater(amount);
         return;
       }
 
-      if (normalized === "workout") {
+      if (action === "workout") {
         const workout = prompt("Workout name") || "Workout done";
         document.getElementById("healthWorkout").value = workout;
         markWorkoutDone();
