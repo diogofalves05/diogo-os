@@ -7,8 +7,8 @@
   <meta name="apple-mobile-web-app-title" content="Diogo OS" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#050509" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-  <link rel="icon" type="image/png" href="/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=3" />
+  <link rel="icon" type="image/png" href="/apple-touch-icon.png?v=3" />
   <meta name="application-name" content="Diogo OS" />
   <title>Diogo OS</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -719,6 +719,23 @@
           </div>
 
           <div class="card full">
+            <h2>Conversion Analytics</h2>
+            <div class="stats">
+              <div class="stat"><strong id="dialContactRate">0%</strong><span class="muted">Dials to contacts</span></div>
+              <div class="stat"><strong id="contactApptRate">0%</strong><span class="muted">Contacts to appts</span></div>
+              <div class="stat"><strong id="apptPresRate">0%</strong><span class="muted">Appts to presentations</span></div>
+              <div class="stat"><strong id="appCloseRate">0%</strong><span class="muted">Apps to sales</span></div>
+            </div>
+
+            <div class="section-list" style="margin-top: 14px;">
+              <div class="list-item">Presentations to applications <strong id="presAppRate">0%</strong></div>
+              <div class="list-item">Income per closed sale <strong id="incomePerSale">$0</strong></div>
+              <div class="list-item">Weekly income left <strong id="weeklyIncomeLeft">$0</strong></div>
+              <div class="list-item">Daily pace needed <strong id="dailyPaceNeeded">$0/day</strong></div>
+            </div>
+          </div>
+
+          <div class="card full">
             <h2>Sales Tracker</h2>
             <div class="form-grid">
               <input id="salesDials" class="input" type="number" placeholder="Dials" />
@@ -921,7 +938,7 @@
       <button class="fab secondary" onclick="quickAddMenu()">Quick add</button>
 
       <div class="footer">
-        Diogo OS v11, iPhone polish added.
+        Diogo OS v12, sales analytics added.
       </div>
     </section>
   </main>
@@ -1356,12 +1373,15 @@
 
       const rows = data || [];
       const totals = rows.reduce((acc, row) => {
-        acc.dials += row.dials || 0;
-        acc.contacts += row.contacts || 0;
-        acc.closed += row.closed_sales || 0;
+        acc.dials += Number(row.dials || 0);
+        acc.contacts += Number(row.contacts || 0);
+        acc.appointments += Number(row.appointments || 0);
+        acc.presentations += Number(row.presentations || 0);
+        acc.applications += Number(row.applications || 0);
+        acc.closed += Number(row.closed_sales || 0);
         acc.income += Number(row.income || 0);
         return acc;
-      }, { dials: 0, contacts: 0, closed: 0, income: 0 });
+      }, { dials: 0, contacts: 0, appointments: 0, presentations: 0, applications: 0, closed: 0, income: 0 });
 
       document.getElementById("weeklyDials").textContent = totals.dials;
       document.getElementById("weeklyContacts").textContent = totals.contacts;
@@ -1373,6 +1393,8 @@
       const percent = Math.min(100, Math.round((totals.income / goal) * 100));
       document.getElementById("weeklyIncomeProgress").style.width = percent + "%";
       document.getElementById("weeklyIncomeText").textContent = "$" + totals.income.toLocaleString() + " of $" + goal.toLocaleString() + " weekly target";
+
+      updateSalesAnalytics(totals, goal);
 
       const salesHistory = document.getElementById("salesHistory");
       if (!rows.length) {
@@ -1389,6 +1411,26 @@
           <p class="muted">Income: $${Number(row.income || 0).toLocaleString()}</p>
         </div>
       `).join("");
+    }
+
+    function updateSalesAnalytics(totals, goal) {
+      const rate = (top, bottom) => bottom > 0 ? Math.round((top / bottom) * 100) : 0;
+
+      document.getElementById("dialContactRate").textContent = rate(totals.contacts, totals.dials) + "%";
+      document.getElementById("contactApptRate").textContent = rate(totals.appointments, totals.contacts) + "%";
+      document.getElementById("apptPresRate").textContent = rate(totals.presentations, totals.appointments) + "%";
+      document.getElementById("presAppRate").textContent = rate(totals.applications, totals.presentations) + "%";
+      document.getElementById("appCloseRate").textContent = rate(totals.closed, totals.applications) + "%";
+
+      const incomePerSale = totals.closed > 0 ? Math.round(totals.income / totals.closed) : 0;
+      const left = Math.max(0, goal - totals.income);
+      const day = new Date().getDay();
+      const daysLeft = day === 0 ? 1 : Math.max(1, 7 - day);
+      const pace = Math.ceil(left / daysLeft);
+
+      document.getElementById("incomePerSale").textContent = "$" + incomePerSale.toLocaleString();
+      document.getElementById("weeklyIncomeLeft").textContent = "$" + left.toLocaleString();
+      document.getElementById("dailyPaceNeeded").textContent = "$" + pace.toLocaleString() + "/day";
     }
 
     async function saveHealth() {
