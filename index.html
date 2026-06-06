@@ -423,6 +423,35 @@
       margin-bottom: 5px;
     }
 
+    .bar-chart {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 88px 1fr 70px;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+      color: rgba(245, 245, 247, 0.72);
+    }
+
+    .bar-track {
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.1);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(245, 245, 247, 0.92), rgba(0, 255, 204, 0.72));
+    }
+
     .score-ring {
       width: 160px;
       height: 160px;
@@ -776,6 +805,28 @@
           </div>
 
           <div class="card full">
+            <h2>Health Charts</h2>
+            <div class="grid">
+              <div class="card half" style="box-shadow:none;">
+                <h2>Water</h2>
+                <div id="waterChart" class="bar-chart"></div>
+              </div>
+              <div class="card half" style="box-shadow:none;">
+                <h2>Steps</h2>
+                <div id="stepsChart" class="bar-chart"></div>
+              </div>
+              <div class="card half" style="box-shadow:none;">
+                <h2>Sleep</h2>
+                <div id="sleepChart" class="bar-chart"></div>
+              </div>
+              <div class="card half" style="box-shadow:none;">
+                <h2>Weight</h2>
+                <div id="weightChart" class="bar-chart"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card full">
             <h2>Streaks</h2>
             <div class="stats">
               <div class="stat"><strong id="salesStreak">0</strong><span class="muted">Sales activity streak</span></div>
@@ -938,7 +989,7 @@
       <button class="fab secondary" onclick="quickAddMenu()">Quick add</button>
 
       <div class="footer">
-        Diogo OS v12, sales analytics added.
+        Diogo OS v13, health charts added.
       </div>
     </section>
   </main>
@@ -1628,6 +1679,7 @@
 
       if (!rows.length) {
         history.innerHTML = '<p class="muted">No health history this week yet.</p>';
+        renderHealthCharts([]);
         return;
       }
 
@@ -1641,6 +1693,44 @@
           <p class="muted">Weight: ${row.weight ? row.weight + " lb" : "None"}</p>
         </div>
       `).join("");
+
+      renderHealthCharts(rows);
+    }
+
+    function renderHealthCharts(rows) {
+      const ordered = [...rows].sort((a, b) => String(a.entry_date).localeCompare(String(b.entry_date)));
+      const waterGoal = Number(settings.water_goal_oz || 80);
+      const stepGoal = Number(settings.step_goal || 10000);
+
+      renderBarChart("waterChart", ordered, row => Number(row.water_oz || 0), waterGoal, "oz");
+      renderBarChart("stepsChart", ordered, row => Number(row.steps || 0), stepGoal, "");
+      renderBarChart("sleepChart", ordered, row => Number(row.sleep_hours || 0), 8, "h");
+      renderBarChart("weightChart", ordered, row => Number(row.weight || 0), Math.max(1, Math.max(...ordered.map(row => Number(row.weight || 0)))), "lb");
+    }
+
+    function renderBarChart(elementId, rows, getValue, maxValue, suffix) {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+
+      if (!rows.length) {
+        element.innerHTML = '<p class="muted">No data yet.</p>';
+        return;
+      }
+
+      element.innerHTML = rows.map(row => {
+        const value = getValue(row);
+        const percent = maxValue > 0 ? Math.min(100, Math.round((value / maxValue) * 100)) : 0;
+        const label = new Date(row.entry_date + "T00:00:00").toLocaleDateString(undefined, { weekday: "short" });
+        const displayValue = suffix ? value.toLocaleString() + " " + suffix : value.toLocaleString();
+
+        return `
+          <div class="bar-row">
+            <span>${label}</span>
+            <div class="bar-track"><div class="bar-fill" style="width:${percent}%;"></div></div>
+            <span>${displayValue}</span>
+          </div>
+        `;
+      }).join("");
     }
 
     async function addMoneyGoal() {
