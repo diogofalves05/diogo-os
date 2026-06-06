@@ -740,6 +740,7 @@
         <button class="tab-btn" onclick="openTab('settings', this)">Settings</button>
         <button class="tab-btn" onclick="openTab('habits', this)">Habits</button>
         <button class="tab-btn" onclick="openTab('planner', this)">Planner</button>
+        <button class="tab-btn" onclick="openTab('monthly', this)">Monthly</button>
         <button class="tab-btn" onclick="openTab('review', this)">Review</button>
         <button class="tab-btn" onclick="openTab('backup', this)">Backup</button>
         <button class="tab-btn" onclick="toggleMobileTabs(this)">More</button>
@@ -1142,6 +1143,67 @@
         </div>
       </section>
 
+      <section id="tab-monthly" class="tab-page">
+        <p class="mobile-section-title">Monthly dashboard and big picture</p>
+        <div class="grid">
+          <div class="card full">
+            <h2>Monthly Dashboard</h2>
+            <p class="muted" id="monthlyText">This month</p>
+
+            <div class="stats">
+              <div class="stat"><strong id="monthlyIncome">$0</strong><span class="muted">Income</span></div>
+              <div class="stat"><strong id="monthlyDials">0</strong><span class="muted">Dials</span></div>
+              <div class="stat"><strong id="monthlyClosed">0</strong><span class="muted">Closed sales</span></div>
+              <div class="stat"><strong id="monthlyWorkouts">0</strong><span class="muted">Workouts</span></div>
+            </div>
+          </div>
+
+          <div class="card half">
+            <h2>Sales Month</h2>
+            <div class="section-list">
+              <div class="list-item">Contacts <strong id="monthlyContacts">0</strong></div>
+              <div class="list-item">Appointments <strong id="monthlyAppointments">0</strong></div>
+              <div class="list-item">Presentations <strong id="monthlyPresentations">0</strong></div>
+              <div class="list-item">Applications <strong id="monthlyApplications">0</strong></div>
+              <div class="list-item">Best sales day <strong id="monthlyBestSalesDay">None</strong></div>
+              <div class="list-item">Average income per sale <strong id="monthlyIncomePerSale">$0</strong></div>
+            </div>
+          </div>
+
+          <div class="card half">
+            <h2>Health Month</h2>
+            <div class="section-list">
+              <div class="list-item">Water total <strong id="monthlyWater">0 oz</strong></div>
+              <div class="list-item">Average sleep <strong id="monthlyAvgSleep">0h</strong></div>
+              <div class="list-item">Average steps <strong id="monthlyAvgSteps">0</strong></div>
+              <div class="list-item">Active calories <strong id="monthlyActiveCalories">0</strong></div>
+              <div class="list-item">Exercise minutes <strong id="monthlyExerciseMinutes">0</strong></div>
+              <div class="list-item">Average resting HR <strong id="monthlyRestingHr">0</strong></div>
+            </div>
+          </div>
+
+          <div class="card half">
+            <h2>Habits and Planner</h2>
+            <div class="section-list">
+              <div class="list-item">Habit completion <strong id="monthlyHabitPercent">0%</strong></div>
+              <div class="list-item">Habits done <strong id="monthlyHabitsDone">0</strong></div>
+              <div class="list-item">Planner completion <strong id="monthlyPlannerPercent">0%</strong></div>
+              <div class="list-item">Planner blocks done <strong id="monthlyPlannerDone">0</strong></div>
+            </div>
+          </div>
+
+          <div class="card half">
+            <h2>CRM and Money</h2>
+            <div class="section-list">
+              <div class="list-item">CRM contacts <strong id="monthlyCrmContacts">0</strong></div>
+              <div class="list-item">Follow-ups due or overdue <strong id="monthlyCrmDue">0</strong></div>
+              <div class="list-item">Money goals <strong id="monthlyMoneyGoals">0</strong></div>
+              <div class="list-item">Money saved across goals <strong id="monthlyMoneySaved">$0</strong></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="tab-review" class="tab-page">
         <p class="mobile-section-title">Weekly review and next week focus</p>
         <div class="grid">
@@ -1239,7 +1301,7 @@
       <button class="fab secondary" onclick="quickAddMenu()">Quick add</button>
 
       <div class="footer">
-        Diogo OS v18, weekly review added.
+        Diogo OS v19, monthly dashboard added.
       </div>
     </section>
   </main>
@@ -1371,6 +1433,7 @@
         loadPlannerBlocks(),
         loadHabits(),
         loadWeeklyReview(),
+        loadMonthlyDashboard(),
         loadBackupCounts(),
         loadCrm(),
         loadDailyStatus(),
@@ -2509,6 +2572,125 @@
 
       if (error) return showError(error.message);
       await loadPlannerBlocks();
+    }
+
+    function startOfMonthISO() {
+      const now = new Date();
+      const first = new Date(now.getFullYear(), now.getMonth(), 1);
+      return first.toISOString().slice(0, 10);
+    }
+
+    async function loadMonthlyDashboard() {
+      const monthStart = startOfMonthISO();
+      const now = new Date();
+      const monthName = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
+      const monthlyText = document.getElementById("monthlyText");
+      if (monthlyText) monthlyText.textContent = monthName;
+
+      const [
+        { data: salesRows, error: salesError },
+        { data: healthRows, error: healthError },
+        { data: habitRows, error: habitError },
+        { data: plannerRows, error: plannerError },
+        { data: crmRows, error: crmError },
+        { data: moneyRows, error: moneyError }
+      ] = await Promise.all([
+        client.from("sales_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", monthStart),
+        client.from("health_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", monthStart),
+        client.from("habit_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", monthStart),
+        client.from("daily_planner").select("*").eq("user_id", currentUser.id).gte("entry_date", monthStart),
+        client.from("crm_contacts").select("*").eq("user_id", currentUser.id),
+        client.from("money_goals").select("*").eq("user_id", currentUser.id)
+      ]);
+
+      const firstError = salesError || healthError || habitError || plannerError || crmError || moneyError;
+      if (firstError) return showError(firstError.message);
+
+      const sales = salesRows || [];
+      const health = healthRows || [];
+      const habits = habitRows || [];
+      const planner = plannerRows || [];
+      const crm = crmRows || [];
+      const money = moneyRows || [];
+
+      const salesTotals = sales.reduce((acc, row) => {
+        acc.dials += Number(row.dials || 0);
+        acc.contacts += Number(row.contacts || 0);
+        acc.appointments += Number(row.appointments || 0);
+        acc.presentations += Number(row.presentations || 0);
+        acc.applications += Number(row.applications || 0);
+        acc.closed += Number(row.closed_sales || 0);
+        acc.income += Number(row.income || 0);
+        return acc;
+      }, { dials: 0, contacts: 0, appointments: 0, presentations: 0, applications: 0, closed: 0, income: 0 });
+
+      const bestSalesDay = sales.length
+        ? [...sales].sort((a, b) => Number(b.income || 0) - Number(a.income || 0))[0]
+        : null;
+
+      const incomePerSale = salesTotals.closed > 0 ? Math.round(salesTotals.income / salesTotals.closed) : 0;
+
+      const sleepRows = health.filter(row => Number(row.sleep_hours || 0) > 0);
+      const stepRows = health.filter(row => Number(row.steps || 0) > 0);
+      const heartRows = health.filter(row => Number(row.resting_heart_rate || 0) > 0);
+
+      const waterTotal = health.reduce((sum, row) => sum + Number(row.water_oz || 0), 0);
+      const workouts = health.filter(row => (row.workout || "").trim()).length;
+      const activeCalories = health.reduce((sum, row) => sum + Number(row.active_calories || 0), 0);
+      const exerciseMinutes = health.reduce((sum, row) => sum + Number(row.exercise_minutes || 0), 0);
+
+      const avgSleep = sleepRows.length
+        ? sleepRows.reduce((sum, row) => sum + Number(row.sleep_hours || 0), 0) / sleepRows.length
+        : 0;
+
+      const avgSteps = stepRows.length
+        ? Math.round(stepRows.reduce((sum, row) => sum + Number(row.steps || 0), 0) / stepRows.length)
+        : 0;
+
+      const avgHr = heartRows.length
+        ? Math.round(heartRows.reduce((sum, row) => sum + Number(row.resting_heart_rate || 0), 0) / heartRows.length)
+        : 0;
+
+      const habitDone = habits.filter(row => row.completed).length;
+      const habitPercent = habits.length ? Math.round((habitDone / habits.length) * 100) : 0;
+
+      const plannerDone = planner.filter(row => row.completed).length;
+      const plannerPercent = planner.length ? Math.round((plannerDone / planner.length) * 100) : 0;
+
+      const today = todayISO();
+      const crmDue = crm.filter(row => row.next_follow_up && row.next_follow_up <= today).length;
+
+      const moneySaved = money.reduce((sum, row) => sum + Number(row.current_amount || 0), 0);
+
+      document.getElementById("monthlyIncome").textContent = "$" + salesTotals.income.toLocaleString();
+      document.getElementById("monthlyDials").textContent = salesTotals.dials;
+      document.getElementById("monthlyClosed").textContent = salesTotals.closed;
+      document.getElementById("monthlyWorkouts").textContent = workouts;
+
+      document.getElementById("monthlyContacts").textContent = salesTotals.contacts;
+      document.getElementById("monthlyAppointments").textContent = salesTotals.appointments;
+      document.getElementById("monthlyPresentations").textContent = salesTotals.presentations;
+      document.getElementById("monthlyApplications").textContent = salesTotals.applications;
+      document.getElementById("monthlyBestSalesDay").textContent = bestSalesDay ? bestSalesDay.entry_date + " $" + Number(bestSalesDay.income || 0).toLocaleString() : "None";
+      document.getElementById("monthlyIncomePerSale").textContent = "$" + incomePerSale.toLocaleString();
+
+      document.getElementById("monthlyWater").textContent = waterTotal + " oz";
+      document.getElementById("monthlyAvgSleep").textContent = avgSleep ? avgSleep.toFixed(1) + "h" : "0h";
+      document.getElementById("monthlyAvgSteps").textContent = avgSteps.toLocaleString();
+      document.getElementById("monthlyActiveCalories").textContent = activeCalories.toLocaleString();
+      document.getElementById("monthlyExerciseMinutes").textContent = exerciseMinutes.toLocaleString();
+      document.getElementById("monthlyRestingHr").textContent = avgHr ? avgHr + " bpm" : "0";
+
+      document.getElementById("monthlyHabitPercent").textContent = habitPercent + "%";
+      document.getElementById("monthlyHabitsDone").textContent = habitDone;
+      document.getElementById("monthlyPlannerPercent").textContent = plannerPercent + "%";
+      document.getElementById("monthlyPlannerDone").textContent = plannerDone;
+
+      document.getElementById("monthlyCrmContacts").textContent = crm.length;
+      document.getElementById("monthlyCrmDue").textContent = crmDue;
+      document.getElementById("monthlyMoneyGoals").textContent = money.length;
+      document.getElementById("monthlyMoneySaved").textContent = "$" + moneySaved.toLocaleString();
     }
 
     async function loadWeeklyReview() {
