@@ -869,6 +869,7 @@
               <div class="list-item">Habits done <strong id="homeHabitCount">0</strong></div>
               <div class="list-item">Active calories <strong id="homeActiveCalories">0</strong></div>
               <div class="list-item">Exercise minutes <strong id="homeExerciseMinutes">0</strong></div>
+              <div class="list-item">Watch synced <strong id="homeWatchSynced">Never</strong></div>
             </div>
           </div>
         </div>
@@ -980,7 +981,11 @@
 
           <div class="card full">
             <h2>Apple Watch Manual Log</h2>
-            <p class="muted">Copy these numbers from Apple Fitness or Apple Health for now. HealthKit auto-sync comes later with the iPhone companion app.</p>
+            <p class="muted">Apple Watch data can now sync from Diogo Health Sync.</p>
+
+            <div class="list-item" style="margin-bottom: 14px;">
+              Last synced from Apple Watch <strong id="watchLastSynced">Never</strong>
+            </div>
 
             <div class="form-grid">
               <input id="watchActiveCalories" class="input" type="number" placeholder="Active calories" />
@@ -1539,7 +1544,7 @@
       <button class="fab secondary" onclick="quickAddMenu()">Quick add</button>
 
       <div class="footer">
-        Diogo OS v24, AI review prep added.
+        Diogo OS v25, Apple Watch sync time added.
       </div>
     </section>
   </main>
@@ -2112,6 +2117,7 @@
       document.getElementById("homeWorkout").textContent = h.workout || "Not logged";
       document.getElementById("homeActiveCalories").textContent = h.active_calories || 0;
       document.getElementById("homeExerciseMinutes").textContent = h.exercise_minutes || 0;
+      document.getElementById("homeWatchSynced").textContent = formatSyncTime(h.health_sync_updated_at);
 
       document.getElementById("watchViewActiveCalories").textContent = h.active_calories || 0;
       document.getElementById("watchViewExerciseMinutes").textContent = h.exercise_minutes || 0;
@@ -2119,6 +2125,7 @@
       document.getElementById("watchViewRestingHeartRate").textContent = (h.resting_heart_rate || 0) + " bpm";
       document.getElementById("watchViewWorkoutDuration").textContent = (h.workout_duration_minutes || 0) + " min";
       document.getElementById("watchViewSleepHours").textContent = (h.watch_sleep_hours || 0) + "h";
+      document.getElementById("watchLastSynced").textContent = formatSyncTime(h.health_sync_updated_at);
 
       document.getElementById("healthWeight").value = h.weight || "";
       document.getElementById("healthWater").value = h.water_oz || "";
@@ -3827,6 +3834,20 @@ Keep it direct and practical.`;
         document.getElementById("healthWorkout").value = workout;
         markWorkoutDone();
       }
+    }
+
+    function formatSyncTime(value) {
+      if (!value) return "Never";
+
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "Never";
+
+      return date.toLocaleString(undefined, {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+      });
     }
 
     function showError(message) {
